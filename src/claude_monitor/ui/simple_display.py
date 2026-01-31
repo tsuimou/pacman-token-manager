@@ -213,8 +213,12 @@ class SimpleDisplayComponent:
         tkn_line = f"TKN      {state_emoji} \033[33m{bar}\033[0m {tokens_used:,} / {token_limit:,}"
         lines.append(f"\033[33m{self.VERTICAL}\033[0m  {tkn_line}{' ' * (self.width - len(tkn_line) - 4 + 9)}\033[33m{self.VERTICAL}\033[0m")
 
-        # Status text
-        lines.append(f"\033[33m{self.VERTICAL}\033[0m  \033[36m{human_status}\033[0m{' ' * (self.width - len(human_status) - 4)}\033[33m{self.VERTICAL}\033[0m")
+        # Tokens LEFT (the key info!)
+        tokens_left = max(0, token_limit - tokens_used)
+        left_str = self._format_tokens(tokens_left)
+        left_line = f"\033[32m{left_str} left\033[0m before you have to wait"
+        left_stripped = f"{left_str} left before you have to wait"
+        lines.append(f"\033[33m{self.VERTICAL}\033[0m  {left_line}{' ' * (self.width - len(left_stripped) - 4)}\033[33m{self.VERTICAL}\033[0m")
 
         # Empty line
         lines.append(f"\033[33m{self.VERTICAL}\033[0m{' ' * (self.width - 2)}\033[33m{self.VERTICAL}\033[0m")
