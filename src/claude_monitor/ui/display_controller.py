@@ -23,6 +23,7 @@ from claude_monitor.ui.components import (
 )
 from claude_monitor.ui.layouts import ScreenManager
 from claude_monitor.ui.session_display import SessionDisplayComponent
+from claude_monitor.ui.simple_display import SimpleDisplayComponent
 from claude_monitor.utils.notifications import NotificationManager
 from claude_monitor.utils.time_utils import (
     TimezoneHandler,
@@ -35,9 +36,15 @@ from claude_monitor.utils.time_utils import (
 class DisplayController:
     """Main controller for coordinating UI display operations."""
 
-    def __init__(self) -> None:
-        """Initialize display controller with components."""
+    def __init__(self, use_simple_display: bool = True) -> None:
+        """Initialize display controller with components.
+
+        Args:
+            use_simple_display: Use the new simplified human-first display
+        """
+        self.use_simple_display = use_simple_display
         self.session_display = SessionDisplayComponent()
+        self.simple_display = SimpleDisplayComponent()
         self.loading_screen = LoadingScreenComponent()
         self.error_display = ErrorDisplayComponent()
         self.screen_manager = ScreenManager()
@@ -230,6 +237,10 @@ class DisplayController:
             )
             return self.buffer_manager.create_screen_renderable(screen_buffer)
 
+        # Use simplified display if enabled
+        if self.use_simple_display:
+            return self._create_simple_display(active_block, data, args, token_limit, current_time)
+
         cost_limit_p90 = None
         messages_limit_p90 = None
 
@@ -299,7 +310,155 @@ class DisplayController:
             )
             return self.buffer_manager.create_screen_renderable(screen_buffer)
 
-        return self.buffer_manager.create_screen_renderable(screen_buffer)
+        no_motion = processed_data.get("no_motion", False)
+        return self.buffer_manager.create_screen_renderable(screen_buffer, no_motion=no_motion)
+
+    def _create_simple_display(
+        self,
+        active_block: Dict[str, Any],
+        data: Dict[str, Any],
+        args: Any,
+        token_limit: int,
+        current_time: datetime,
+    ) -> RenderableType:
+        """Create the simplified human-first display.
+
+        Args:
+            active_block: Active session block data
+            data: Full usage data
+            args: Command line arguments
+            token_limit: Current token limit
+            current_time: Current UTC time
+
+        Returns:
+            Rich Panel renderable
+        """
+        # Extract basic data
+        tokens_used = active_block.get("totalTokens", 0)
+        per_model_stats = active_block.get("perModelStats", {})
+
+        # Calculate time to reset
+        time_data = self.session_calculator.calculate_time_data(
+            {
+                "start_time_str": active_block.get("startTime"),
+                "end_time_str": active_block.get("endTime"),
+            },
+            current_time,
+        )
+        minutes_to_reset = time_data.get("minutes_to_reset", 300)
+
+        # Calculate model distribution
+        model_distribution = {}
+        total_tokens = 0
+        for model, stats in per_model_stats.items():
+            if isinstance(stats, dict):
+                model_tokens = stats.get("input_tokens", 0) + stats.get("output_tokens", 0)
+                total_tokens += model_tokens
+
+        if total_tokens > 0:
+            for model, stats in per_model_stats.items():
+                if isinstance(stats, dict):
+                    model_tokens = stats.get("input_tokens", 0) + stats.get("output_tokens", 0)
+                    normalized = normalize_model_name(model)
+                    # Simplify to just "sonnet" or "opus"
+                    if "sonnet" in normalized.lower():
+                        key = "sonnet"
+                    elif "opus" in normalized.lower():
+                        key = "opus"
+                    elif "haiku" in normalized.lower():
+                        key = "haiku"
+                    else:
+                        key = normalized
+                    model_distribution[key] = model_distribution.get(key, 0) + (model_tokens / total_tokens * 100)
+
+        # Calculate burn rate
+        burn_rate = calculate_hourly_burn_rate(data["blocks"], current_time)
+
+        # Calculate output ratio
+        total_input = sum(
+            stats.get("input_tokens", 0)
+            for stats in per_model_stats.values()
+            if isinstance(stats, dict)
+        )
+        total_output = sum(
+            stats.get("output_tokens", 0)
+            for stats in per_model_stats.values()
+            if isinstance(stats, dict)
+        )
+        output_ratio = total_output / total_input if total_input > 0 else 1.0
+
+        # Render with simple display
+        return self.simple_display.render(
+            tokens_used=tokens_used,
+            token_limit=token_limit,
+            minutes_to_reset=minutes_to_reset,
+            model_distribution=model_distribution,
+            burn_rate=burn_rate,
+            output_ratio=output_ratio,
+        )
+
+    def _calculate_top_contributors(
+        self,
+        per_model_stats: Dict[str, Any],
+        entries: List[Dict[str, Any]],
+        limit: int = 5,
+    ) -> List[Dict[str, Any]]:
+        """Calculate top token contributors from session data.
+
+        Estimates token attribution from available data sources:
+        - Models: Which Claude model consumed tokens
+        - Messages: Individual API calls (grouped by message_id if available)
+
+        Args:
+            per_model_stats: Per-model token statistics
+            entries: List of usage entries
+            limit: Maximum number of contributors to return
+
+        Returns:
+            List of contributor dicts with type, name, tokens, percentage
+        """
+        contributors: List[Dict[str, Any]] = []
+        total_tokens = 0
+
+        # Calculate total tokens from per_model_stats
+        for model, stats in per_model_stats.items():
+            if isinstance(stats, dict):
+                model_tokens = (
+                    stats.get("input_tokens", 0)
+                    + stats.get("output_tokens", 0)
+                    + stats.get("cache_creation_tokens", 0)
+                    + stats.get("cache_read_tokens", 0)
+                )
+                total_tokens += model_tokens
+
+        if total_tokens == 0:
+            return []
+
+        # Model-level attribution
+        for model, stats in per_model_stats.items():
+            if isinstance(stats, dict):
+                model_tokens = (
+                    stats.get("input_tokens", 0)
+                    + stats.get("output_tokens", 0)
+                    + stats.get("cache_creation_tokens", 0)
+                    + stats.get("cache_read_tokens", 0)
+                )
+                if model_tokens > 0:
+                    normalized = normalize_model_name(model)
+                    # Shorten model name for display
+                    display_name = normalized.replace("claude-", "").replace("-", " ").title()
+                    contributors.append({
+                        "type": "model",
+                        "name": display_name,
+                        "tokens": model_tokens,
+                        "percentage": (model_tokens / total_tokens) * 100,
+                        "input_tokens": stats.get("input_tokens", 0),
+                        "output_tokens": stats.get("output_tokens", 0),
+                    })
+
+        # Sort by tokens descending and limit
+        contributors.sort(key=lambda x: x["tokens"], reverse=True)
+        return contributors[:limit]
 
     def _process_active_session_data(
         self,
@@ -329,6 +488,12 @@ class DisplayController:
         # Calculate model distribution
         model_distribution = self._calculate_model_distribution(
             session_data["raw_per_model_stats"]
+        )
+
+        # Calculate top token contributors
+        top_contributors = self._calculate_top_contributors(
+            session_data["raw_per_model_stats"],
+            session_data["entries"],
         )
 
         # Calculate token limits
@@ -390,6 +555,9 @@ class DisplayController:
             "show_exceed_notification": notifications["show_exceed_notification"],
             "show_tokens_will_run_out": notifications["show_cost_will_exceed"],
             "original_limit": original_limit,
+            "top_contributors": top_contributors,
+            "auto_compact": getattr(args, "auto_compact", False),
+            "no_motion": getattr(args, "no_motion", False),
         }
 
     def _calculate_model_distribution(
@@ -528,6 +696,166 @@ class LiveDisplayManager:
         return self._live_context
 
 
+class PacManBorder:
+    """Pac-Man animated border around the dashboard.
+
+    Pac-Man moves along the outer border, eating dots.
+    """
+
+    YELLOW = "\033[33m"
+    RESET = "\033[0m"
+
+    # Box drawing characters
+    TOP_LEFT = "┌"
+    TOP_RIGHT = "┐"
+    BOTTOM_LEFT = "└"
+    BOTTOM_RIGHT = "┘"
+    HORIZONTAL = "─"
+    VERTICAL = "│"
+
+    # Pac-Man characters
+    PAC_RIGHT = "ᗧ"
+    PAC_LEFT = "ᗤ"
+    PAC_UP = "ᗢ"
+    PAC_DOWN = "ᗣ"
+    PAC_CLOSED = "○"
+
+    # Dots
+    BIG_DOT = "●"
+    SMALL_DOT = "•"
+
+    def __init__(self, width: int = 70, height: int = 30, no_motion: bool = False):
+        self._width = width
+        self._height = height
+        self._no_motion = no_motion
+        self._position = 0
+        self._mouth_open = True
+        self._perimeter = 2 * (width - 2) + 2 * (height - 2)
+        try:
+            import sys
+            self._is_tty = sys.stdout.isatty()
+        except Exception:
+            self._is_tty = False
+
+    def _get_border_char(self, pos: int) -> tuple:
+        """Get position info for a border position.
+
+        Returns: (row, col, direction) where direction is 'right', 'down', 'left', 'up'
+        """
+        w, h = self._width - 2, self._height - 2
+
+        if pos < w:  # Top edge (left to right)
+            return (0, pos + 1, 'right')
+        elif pos < w + h:  # Right edge (top to bottom)
+            return (pos - w + 1, self._width - 1, 'down')
+        elif pos < 2 * w + h:  # Bottom edge (right to left)
+            return (self._height - 1, self._width - 2 - (pos - w - h), 'left')
+        else:  # Left edge (bottom to top)
+            return (self._height - 2 - (pos - 2 * w - h), 0, 'up')
+
+    def advance(self) -> None:
+        """Advance animation to next frame."""
+        if self._no_motion or not self._is_tty:
+            return
+        self._position = (self._position + 1) % self._perimeter
+        self._mouth_open = not self._mouth_open
+
+    def render_top(self) -> str:
+        """Render top border line."""
+        if self._no_motion or not self._is_tty:
+            return f"{self.YELLOW}{self.TOP_LEFT}{self.HORIZONTAL * (self._width - 2)}{self.TOP_RIGHT}{self.RESET}"
+
+        parts = [f"{self.YELLOW}{self.TOP_LEFT}"]
+        w = self._width - 2
+
+        for i in range(w):
+            pos = i
+            if pos == self._position:
+                pac = self.PAC_RIGHT if self._mouth_open else self.PAC_CLOSED
+                parts.append(pac)
+            elif pos < self._position:
+                parts.append(self.SMALL_DOT)
+            else:
+                parts.append(self.BIG_DOT)
+
+        parts.append(f"{self.TOP_RIGHT}{self.RESET}")
+        return "".join(parts)
+
+    def render_middle(self, content: str, row: int) -> str:
+        """Render a middle row with left and right borders."""
+        w, h = self._width - 2, self._height - 2
+
+        # Left border position
+        left_pos = 2 * w + h + (h - row)
+        # Right border position
+        right_pos = w + row
+
+        if self._no_motion or not self._is_tty:
+            left_char = self.VERTICAL
+            right_char = self.VERTICAL
+        else:
+            # Left border
+            if left_pos % self._perimeter == self._position:
+                left_char = self.PAC_UP if self._mouth_open else self.PAC_CLOSED
+            elif left_pos % self._perimeter > self._position or self._position > 2 * w + h:
+                left_char = self.BIG_DOT
+            else:
+                left_char = self.SMALL_DOT
+
+            # Right border
+            if right_pos == self._position:
+                right_char = self.PAC_DOWN if self._mouth_open else self.PAC_CLOSED
+            elif right_pos < self._position:
+                right_char = self.SMALL_DOT
+            else:
+                right_char = self.BIG_DOT
+
+        # Pad content to width
+        visible_len = len(content.encode('utf-8').decode('utf-8'))
+        # Strip ANSI codes for length calculation
+        import re
+        stripped = re.sub(r'\x1b\[[0-9;]*m', '', content)
+        padding = self._width - 2 - len(stripped)
+        if padding > 0:
+            content = content + " " * padding
+
+        return f"{self.YELLOW}{left_char}{self.RESET}{content}{self.YELLOW}{right_char}{self.RESET}"
+
+    def render_bottom(self) -> str:
+        """Render bottom border line."""
+        if self._no_motion or not self._is_tty:
+            return f"{self.YELLOW}{self.BOTTOM_LEFT}{self.HORIZONTAL * (self._width - 2)}{self.BOTTOM_RIGHT}{self.RESET}"
+
+        parts = [f"{self.YELLOW}{self.BOTTOM_LEFT}"]
+        w, h = self._width - 2, self._height - 2
+        bottom_start = w + h
+
+        for i in range(w):
+            pos = bottom_start + (w - 1 - i)
+            if pos == self._position:
+                pac = self.PAC_LEFT if self._mouth_open else self.PAC_CLOSED
+                parts.append(pac)
+            elif pos < self._position:
+                parts.append(self.SMALL_DOT)
+            else:
+                parts.append(self.BIG_DOT)
+
+        parts.append(f"{self.BOTTOM_RIGHT}{self.RESET}")
+        return "".join(parts)
+
+
+# Shared border instance
+_pacman_border: Optional[PacManBorder] = None
+
+
+def get_pacman_border(no_motion: bool = False) -> PacManBorder:
+    """Get or create the shared Pac-Man border instance."""
+    global _pacman_border
+    if _pacman_border is None:
+        _pacman_border = PacManBorder(width=70, height=35, no_motion=no_motion)
+    return _pacman_border
+
+
 class ScreenBufferManager:
     """Manager for screen buffer operations and rendering."""
 
@@ -535,11 +863,14 @@ class ScreenBufferManager:
         """Initialize screen buffer manager."""
         self.console: Optional[Console] = None
 
-    def create_screen_renderable(self, screen_buffer: List[str]) -> Group:
-        """Create Rich renderable from screen buffer.
+    def create_screen_renderable(
+        self, screen_buffer: List[str], no_motion: bool = False
+    ) -> Group:
+        """Create Rich renderable from screen buffer with Pac-Man border.
 
         Args:
             screen_buffer: List of screen lines with Rich markup
+            no_motion: Whether to disable border animation
 
         Returns:
             Rich Group renderable
@@ -549,14 +880,27 @@ class ScreenBufferManager:
         if self.console is None:
             self.console = get_themed_console()
 
+        border = get_pacman_border(no_motion)
+
         text_objects = []
-        for line in screen_buffer:
+
+        # Top border
+        text_objects.append(Text(border.render_top()))
+
+        # Content with side borders
+        for idx, line in enumerate(screen_buffer):
             if isinstance(line, str):
-                # Use console to render markup properly
-                text_obj = Text.from_markup(line)
-                text_objects.append(text_obj)
+                # Strip Rich markup for border wrapping, then re-add
+                bordered_line = border.render_middle(line, idx + 1)
+                text_objects.append(Text(bordered_line))
             else:
                 text_objects.append(line)
+
+        # Bottom border
+        text_objects.append(Text(border.render_bottom()))
+
+        # Advance animation for next frame
+        border.advance()
 
         return Group(*text_objects)
 

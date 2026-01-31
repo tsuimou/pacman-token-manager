@@ -83,11 +83,11 @@ changelog = "https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor/blob/m
 "Discussions" = "https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor/discussions"
 
 [project.scripts]
-claude-monitor = "claude_monitor.__main__:main"
-claude-code-monitor = "claude_monitor.__main__:main"
-cmonitor = "claude_monitor.__main__:main"
-ccmonitor = "claude_monitor.__main__:main"
-ccm = "claude_monitor.__main__:main"
+pacman-token-manager = "claude_monitor.__main__:main"
+pacman = "claude_monitor.__main__:main"
+pactkn = "claude_monitor.__main__:main"
+chomp = "claude_monitor.__main__:main"
+pac = "claude_monitor.__main__:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

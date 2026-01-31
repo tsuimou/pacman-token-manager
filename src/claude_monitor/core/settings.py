@@ -166,6 +166,16 @@ class Settings(BaseSettings):
         description="Enable debug logging (equivalent to --log-level DEBUG)",
     )
 
+    auto_compact: bool = Field(
+        default=False,
+        description="Auto-trigger /compact when usage exceeds threshold",
+    )
+
+    no_motion: bool = Field(
+        default=False,
+        description="Disable animations (static dividers)",
+    )
+
     version: bool = Field(default=False, description="Show version information")
 
     clear: bool = Field(default=False, description="Clear saved configuration")
@@ -350,5 +360,7 @@ class Settings(BaseSettings):
         args.log_level = self.log_level
         args.log_file = str(self.log_file) if self.log_file else None
         args.version = self.version
+        args.auto_compact = self.auto_compact
+        args.no_motion = self.no_motion
 
         return args

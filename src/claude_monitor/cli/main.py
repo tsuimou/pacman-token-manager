@@ -12,6 +12,8 @@ from typing import Any, Callable, Dict, List, NoReturn, Optional, Union
 
 from rich.console import Console
 
+
+
 from claude_monitor import __version__
 from claude_monitor.cli.bootstrap import (
     ensure_directories,
@@ -75,7 +77,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         argv = sys.argv[1:]
 
     if "--version" in argv or "-v" in argv:
-        print(f"claude-monitor {__version__}")
+        print(f"Token Manager {__version__}")
         return 0
 
     try:
@@ -171,9 +173,16 @@ def _run_monitoring(args: argparse.Namespace) -> None:
             )
             orchestrator.set_args(args)
 
+            # Auto-compact state
+            last_compact_time: float = 0.0
+            auto_compact_enabled: bool = getattr(args, "auto_compact", False)
+            COMPACT_COOLDOWN: int = 600  # 10 minutes in seconds
+            COMPACT_THRESHOLD: float = 70.0  # Usage percentage threshold
+
             # Setup monitoring callback
             def on_data_update(monitoring_data: Dict[str, Any]) -> None:
                 """Handle data updates from orchestrator."""
+                nonlocal last_compact_time
                 try:
                     data: Dict[str, Any] = monitoring_data.get("data", {})
                     blocks: List[Dict[str, Any]] = data.get("blocks", [])
@@ -187,6 +196,34 @@ def _run_monitoring(args: argparse.Namespace) -> None:
                         if active_blocks:
                             total_tokens: int = active_blocks[0].get("totalTokens", 0)
                             logger.debug(f"Active block tokens: {total_tokens}")
+
+                            # Auto-compact logic
+                            if auto_compact_enabled:
+                                current_limit = monitoring_data.get("token_limit", token_limit)
+                                if current_limit > 0:
+                                    usage_pct = (total_tokens / current_limit) * 100
+                                    current_time_sec = time.time()
+                                    if (
+                                        usage_pct >= COMPACT_THRESHOLD
+                                        and current_time_sec - last_compact_time >= COMPACT_COOLDOWN
+                                    ):
+                                        try:
+                                            import subprocess
+                                            subprocess.Popen(
+                                                ["claude", "/compact"],
+                                                stdout=subprocess.DEVNULL,
+                                                stderr=subprocess.DEVNULL,
+                                            )
+                                            last_compact_time = current_time_sec
+                                            logger.info("Auto compact triggered")
+                                            cooldown_mins = COMPACT_COOLDOWN // 60
+                                            print(
+                                                f"\n✓ Auto compact triggered"
+                                                f"\n  → Usage {usage_pct:.1f}% exceeded {COMPACT_THRESHOLD:.0f}% threshold"
+                                                f"\n  → Next auto action available in {cooldown_mins} min"
+                                            )
+                                        except Exception as compact_err:
+                                            logger.warning(f"Auto compact failed: {compact_err}")
 
                     renderable = display_controller.create_data_display(
                         data, args, monitoring_data.get("token_limit", token_limit)
@@ -410,6 +447,11 @@ def _run_table_view(
             timezone=args.timezone,
             plan=args.plan,
             token_limit=_get_initial_token_limit(args, data_path),
+        )
+
+        # Add Token Manager placeholder
+        console.print(
+            "\n[dim italic]Token Manager: optimization engine (coming soon)[/dim italic]"
         )
 
         # Wait for user to press Ctrl+C

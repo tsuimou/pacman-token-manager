@@ -3,9 +3,10 @@
 Handles formatting of active session screens and session data display.
 """
 
+import sys
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any, Optional, List
 
 import pytz
 
@@ -60,6 +61,43 @@ class SessionDisplayComponent:
         self.token_progress = TokenProgressBar()
         self.time_progress = TimeProgressBar()
         self.model_usage = ModelUsageBar()
+
+    def _compute_context_health(
+        self,
+        usage_percentage: float,
+        burn_rate: float,
+        top_contributors: Optional[list[dict[str, Any]]],
+        auto_compact: bool,
+    ) -> tuple[str, str]:
+        """Compute context health status from existing metrics.
+
+        Args:
+            usage_percentage: Current token usage percentage
+            burn_rate: Current burn rate in tokens/min
+            top_contributors: Top token contributors data
+            auto_compact: Whether auto-compact is enabled
+
+        Returns:
+            Tuple of (emoji, status_text)
+        """
+        # Critical: usage at/above compact threshold (70%) with auto-compact, or ≥80%
+        if usage_percentage >= 80:
+            return "🔴", "Critical"
+        if auto_compact and usage_percentage >= 70:
+            return "🔴", "Critical"
+
+        # Moderate: high burn rate or heavy Opus usage
+        if burn_rate > 100:
+            return "🟡", "Moderate"
+
+        if top_contributors:
+            for contrib in top_contributors:
+                name_lower = contrib.get("name", "").lower()
+                pct = contrib.get("percentage", 0)
+                if "opus" in name_lower and pct > 50:
+                    return "🟡", "Moderate"
+
+        return "🟢", "Healthy"
 
     def _render_wide_progress_bar(self, percentage: float) -> str:
         """Render a wide progress bar (50 chars) using centralized progress bar logic.
@@ -128,6 +166,138 @@ class SessionDisplayComponent:
             original_limit=data.original_limit,
         )
 
+    def _render_top_contributors_section(
+        self, top_contributors: list[dict[str, Any]]
+    ) -> list[str]:
+        """Render the top token contributors section.
+
+        Args:
+            top_contributors: List of contributor dicts with type, name, tokens, percentage
+
+        Returns:
+            List of formatted lines for the contributors section
+        """
+        lines: list[str] = []
+
+        if not top_contributors:
+            return lines
+
+        lines.append("")
+        lines.append("[bold]📈 Top Token Contributors[/bold] [dim](estimated)[/dim]")
+
+        for i, contrib in enumerate(top_contributors[:5], 1):
+            name = contrib.get("name", "Unknown")
+            tokens = contrib.get("tokens", 0)
+            pct = contrib.get("percentage", 0)
+            input_tokens = contrib.get("input_tokens", 0)
+            output_tokens = contrib.get("output_tokens", 0)
+
+            # Create a mini bar visualization
+            bar_width = 12
+            filled = int((pct / 100) * bar_width)
+            bar = "█" * filled + "░" * (bar_width - filled)
+
+            # Format tokens compactly (e.g., 45.2K)
+            if tokens >= 1_000_000:
+                tokens_str = f"{tokens / 1_000_000:.1f}M"
+            elif tokens >= 1_000:
+                tokens_str = f"{tokens / 1_000:.1f}K"
+            else:
+                tokens_str = str(tokens)
+
+            # Show input/output breakdown
+            if input_tokens >= 1_000:
+                in_str = f"{input_tokens / 1_000:.0f}K"
+            else:
+                in_str = str(input_tokens)
+            if output_tokens >= 1_000:
+                out_str = f"{output_tokens / 1_000:.0f}K"
+            else:
+                out_str = str(output_tokens)
+
+            lines.append(
+                f"   {i}. [value]{name:<18}[/] [dim]{bar}[/] [info]{tokens_str:>6}[/] ({pct:4.1f}%) [dim]in:{in_str} out:{out_str}[/]"
+            )
+
+        lines.append("[dim]   Token Manager: optimization engine (coming soon)[/dim]")
+
+        return lines
+
+    def _generate_guidance_suggestions(
+        self,
+        usage_percentage: float,
+        burn_rate: float,
+        top_contributors: Optional[list[dict[str, Any]]],
+    ) -> list[str]:
+        """Generate actionable guidance based on current metrics.
+
+        Args:
+            usage_percentage: Current token usage as percentage of limit
+            burn_rate: Current burn rate in tokens/min
+            top_contributors: List of top token contributors
+
+        Returns:
+            List of suggestion strings (max 3)
+        """
+        suggestions: list[str] = []
+
+        # Rule 1: High usage percentage
+        if usage_percentage >= 80:
+            suggestions.append("Approaching limit — prioritize critical tasks")
+
+        # Rule 2: High burn rate
+        if burn_rate > 100:
+            suggestions.append("High burn rate — consider shorter prompts")
+
+        # Rule 3: Check output vs input ratio from top contributors
+        if top_contributors:
+            total_input = sum(c.get("input_tokens", 0) for c in top_contributors)
+            total_output = sum(c.get("output_tokens", 0) for c in top_contributors)
+            if total_input > 0 and total_output > total_input * 2:
+                suggestions.append("Large outputs — request concise responses")
+
+            # Rule 4: Heavy Opus usage (expensive model)
+            for contrib in top_contributors:
+                name_lower = contrib.get("name", "").lower()
+                pct = contrib.get("percentage", 0)
+                if "opus" in name_lower and pct > 50:
+                    suggestions.append("Heavy Opus usage — use Sonnet for simpler tasks")
+                    break
+
+        return suggestions[:3]  # Max 3 suggestions
+
+    def _render_guidance_section(
+        self,
+        usage_percentage: float,
+        burn_rate: float,
+        top_contributors: Optional[list[dict[str, Any]]],
+    ) -> list[str]:
+        """Render the 'What should I do?' guidance section.
+
+        Args:
+            usage_percentage: Current token usage percentage
+            burn_rate: Current burn rate
+            top_contributors: Top token contributors data
+
+        Returns:
+            List of formatted lines for the guidance section
+        """
+        lines: list[str] = []
+        suggestions = self._generate_guidance_suggestions(
+            usage_percentage, burn_rate, top_contributors
+        )
+
+        lines.append("")
+        lines.append("[bold]💡 What should I do?[/bold]")
+
+        if suggestions:
+            for suggestion in suggestions:
+                lines.append(f"   • [info]{suggestion}[/]")
+        else:
+            lines.append("   [dim]No action needed[/dim]")
+
+        return lines
+
     def format_active_session_screen(
         self,
         plan: str,
@@ -150,6 +320,9 @@ class SessionDisplayComponent:
         show_exceed_notification: bool = False,
         show_tokens_will_run_out: bool = False,
         original_limit: int = 0,
+        top_contributors: Optional[list[dict[str, Any]]] = None,
+        auto_compact: bool = False,
+        no_motion: bool = False,
         **kwargs,
     ) -> list[str]:
         """Format complete active session screen.
@@ -184,6 +357,18 @@ class SessionDisplayComponent:
 
         header_manager = HeaderManager()
         screen_buffer.extend(header_manager.create_header(plan, timezone))
+
+        # Add context health line
+        health_emoji, health_status = self._compute_context_health(
+            usage_percentage, burn_rate, top_contributors, auto_compact
+        )
+        if health_status == "Critical":
+            health_style = "error"
+        elif health_status == "Moderate":
+            health_style = "warning"
+        else:
+            health_style = "success"
+        screen_buffer.append(f"{health_emoji} [value]Context health:[/] [{health_style}]{health_status}[/]")
 
         if plan in ["custom", "pro", "max5", "max20"]:
             from claude_monitor.core.plans import DEFAULT_COST_LIMIT
@@ -253,7 +438,7 @@ class SessionDisplayComponent:
 
             velocity_emoji = VelocityIndicator.get_velocity_emoji(burn_rate)
             screen_buffer.append(
-                f"🔥 [value]Burn Rate:[/]              [warning]{burn_rate:.1f}[/] [dim]tokens/min[/] {velocity_emoji}"
+                f"[dim]🔥 Burn Rate:              {burn_rate:.1f} tokens/min {velocity_emoji}[/dim]"
             )
 
             cost_per_min = (
@@ -261,9 +446,8 @@ class SessionDisplayComponent:
                 if elapsed_session_minutes > 0
                 else 0
             )
-            cost_per_min_display = CostIndicator.render(cost_per_min)
             screen_buffer.append(
-                f"💲 [value]Cost Rate:[/]              {cost_per_min_display} [dim]$/min[/]"
+                f"[dim]💲 Cost Rate:              ${cost_per_min:.4f} $/min[/dim]"
             )
         else:
             cost_display = CostIndicator.render(session_cost)
@@ -272,10 +456,9 @@ class SessionDisplayComponent:
                 if elapsed_session_minutes > 0
                 else 0
             )
-            cost_per_min_display = CostIndicator.render(cost_per_min)
             screen_buffer.append(f"💲 [value]Session Cost:[/]   {cost_display}")
             screen_buffer.append(
-                f"💲 [value]Cost Rate:[/]      {cost_per_min_display} [dim]$/min[/]"
+                f"[dim]💲 Cost Rate:      ${cost_per_min:.4f} $/min[/dim]"
             )
             screen_buffer.append("")
 
@@ -289,7 +472,7 @@ class SessionDisplayComponent:
 
             velocity_emoji = VelocityIndicator.get_velocity_emoji(burn_rate)
             screen_buffer.append(
-                f"🔥 [value]Burn Rate:[/]      [warning]{burn_rate:.1f}[/] [dim]tokens/min[/] {velocity_emoji}"
+                f"[dim]🔥 Burn Rate:      {burn_rate:.1f} tokens/min {velocity_emoji}[/dim]"
             )
 
             screen_buffer.append(
@@ -308,13 +491,27 @@ class SessionDisplayComponent:
             screen_buffer.append(f"⏱️  [value]Time to Reset:[/]  {time_bar}")
             screen_buffer.append("")
 
+        # Add top contributors section
+        if top_contributors:
+            screen_buffer.extend(self._render_top_contributors_section(top_contributors))
+
+        # Add guidance section
+        screen_buffer.extend(
+            self._render_guidance_section(usage_percentage, burn_rate, top_contributors)
+        )
+
+        # Add auto actions status
+        auto_status = "[success]ON[/]" if auto_compact else "[dim]OFF[/]"
         screen_buffer.append("")
-        screen_buffer.append("🔮 [value]Predictions:[/]")
+        screen_buffer.append(f"⚡ [value]Auto actions:[/] {auto_status}")
+
+        screen_buffer.append("")
+        screen_buffer.append("[dim]🔮 Predictions:[/dim]")
         screen_buffer.append(
-            f"   [info]Tokens will run out:[/] [warning]{predicted_end_str}[/]"
+            f"[dim]   Tokens will run out: {predicted_end_str}[/dim]"
         )
         screen_buffer.append(
-            f"   [info]Limit resets at:[/]     [success]{reset_time_str}[/]"
+            f"[dim]   Limit resets at:     {reset_time_str}[/dim]"
         )
         screen_buffer.append("")
 
