@@ -225,8 +225,8 @@ class SimpleDisplayComponent:
 
         # Reset time
         time_str = self._format_time(minutes_to_reset)
-        reset_line = f"TKN limit refreshes in \033[36m{time_str}\033[0m"
-        reset_stripped = f"TKN limit refreshes in {time_str}"
+        reset_line = f"Resets in \033[36m{time_str}\033[0m \033[90m(rolling 5h window)\033[0m"
+        reset_stripped = f"Resets in {time_str} (rolling 5h window)"
         lines.append(f"\033[33m{self.VERTICAL}\033[0m  {reset_line}{' ' * (self.width - len(reset_stripped) - 4)}\033[33m{self.VERTICAL}\033[0m")
 
         # Empty line
