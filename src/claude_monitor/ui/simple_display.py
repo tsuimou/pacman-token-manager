@@ -134,6 +134,34 @@ class SimpleDisplayComponent:
             return "Long prompts are being reused"
         return None
 
+    def _get_alert(
+        self,
+        usage_pct: float,
+        minutes_to_reset: float,
+    ) -> Optional[Tuple[str, str]]:
+        """Get alert banner if threshold is crossed.
+
+        Returns:
+            Tuple of (ANSI color code, alert message) or None
+        """
+        # Critical: 90%+ usage
+        if usage_pct >= 90:
+            return ("31;1", "ALMOST OUT! Consider starting a new session")
+
+        # Warning: 75%+ usage
+        if usage_pct >= 75:
+            return ("33;1", "Running low on tokens")
+
+        # Notice: 50%+ usage
+        if usage_pct >= 50:
+            return ("33", "Token usage is moderate")
+
+        # Time-based: less than 10 minutes to reset
+        if minutes_to_reset <= 10 and usage_pct >= 30:
+            return ("36", "Session resets soon - use remaining tokens!")
+
+        return None
+
     def render(
         self,
         tokens_used: int,
@@ -169,6 +197,13 @@ class SimpleDisplayComponent:
         lines.append(f"\033[33m{self.TOP_LEFT}{self.HORIZONTAL * (self.width - 2)}{self.TOP_RIGHT}\033[0m")
         lines.append(f"\033[33m{self.VERTICAL}  Pacman Token Manager{' ' * (self.width - 25)}{self.VERTICAL}\033[0m")
         lines.append(f"\033[33m{self._horizontal_line()}\033[0m")
+
+        # Alert banner (only shows at thresholds)
+        alert = self._get_alert(usage_pct, minutes_to_reset)
+        if alert:
+            alert_color, alert_text = alert
+            lines.append(f"\033[33m{self.VERTICAL}\033[0m  \033[{alert_color}m⚠️  {alert_text}\033[0m{' ' * (self.width - len(alert_text) - 8)}\033[33m{self.VERTICAL}\033[0m")
+            lines.append(f"\033[33m{self._horizontal_line()}\033[0m")
 
         # Empty line
         lines.append(f"\033[33m{self.VERTICAL}\033[0m{' ' * (self.width - 2)}\033[33m{self.VERTICAL}\033[0m")
