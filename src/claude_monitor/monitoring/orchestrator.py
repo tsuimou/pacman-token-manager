@@ -9,6 +9,7 @@ from claude_monitor.core.plans import DEFAULT_TOKEN_LIMIT, get_token_limit
 from claude_monitor.error_handling import report_error
 from claude_monitor.monitoring.data_manager import DataManager
 from claude_monitor.monitoring.session_monitor import SessionMonitor
+from claude_monitor.monitoring.threshold_alert import get_threshold_alert
 
 logger = logging.getLogger(__name__)
 
@@ -169,10 +170,18 @@ class MonitoringOrchestrator:
             # Calculate token limit
             token_limit: int = self._calculate_token_limit(data)
 
+            # Get plan name for alerts
+            plan_name: str = getattr(self._args, "plan", "pro") if self._args else "pro"
+
+            # Check thresholds and auto-alert
+            tokens_used: int = data.get("total_tokens", 0)
+            get_threshold_alert().check_and_alert(tokens_used, token_limit, plan_name)
+
             # Prepare monitoring data
             monitoring_data: Dict[str, Any] = {
                 "data": data,
                 "token_limit": token_limit,
+                "plan_name": plan_name,
                 "args": self._args,
                 "session_id": self.session_monitor.current_session_id,
                 "session_count": self.session_monitor.session_count,

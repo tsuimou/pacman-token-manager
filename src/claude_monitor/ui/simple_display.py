@@ -1,5 +1,6 @@
 """Simplified human-first display for Pacman Token Manager."""
 
+from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional, Tuple
 from rich.console import Console
 from rich.panel import Panel
@@ -69,6 +70,13 @@ class SimpleDisplayComponent:
         if hours > 0:
             return f"{hours}h {mins}m"
         return f"{mins}m"
+
+    def _get_window_start_time(self, minutes_to_reset: float) -> str:
+        """Calculate and format when the 5-hour window started."""
+        # 5-hour window = 300 minutes
+        minutes_elapsed = 300 - minutes_to_reset
+        start_time = datetime.now() - timedelta(minutes=minutes_elapsed)
+        return start_time.strftime("%I:%M %p").lstrip("0")
 
     def _render_bar(
         self,
@@ -144,21 +152,24 @@ class SimpleDisplayComponent:
         Returns:
             Tuple of (ANSI color code, alert message) or None
         """
+        time_str = self._format_time(minutes_to_reset)
+        window_start = self._get_window_start_time(minutes_to_reset)
+
         # Critical: 90%+ usage
         if usage_pct >= 90:
-            return ("31;1", "ALMOST OUT! Consider starting a new session")
+            return ("31;1", f"ALMOST OUT! Resets in {time_str} (started {window_start})")
 
         # Warning: 75%+ usage
         if usage_pct >= 75:
-            return ("33;1", "Running low on tokens")
+            return ("33;1", f"Running low · Resets in {time_str} (started {window_start})")
 
         # Notice: 50%+ usage
         if usage_pct >= 50:
-            return ("33", "Token usage is moderate")
+            return ("33", f"Halfway there · Resets in {time_str} (started {window_start})")
 
         # Time-based: less than 10 minutes to reset
         if minutes_to_reset <= 10 and usage_pct >= 30:
-            return ("36", "Session resets soon - use remaining tokens!")
+            return ("36", f"Resets in {time_str} - use remaining tokens!")
 
         return None
 
@@ -171,6 +182,7 @@ class SimpleDisplayComponent:
         burn_rate: float = 0,
         output_ratio: float = 1.0,
         usage_over_time: Optional[Dict[str, int]] = None,
+        plan_name: Optional[str] = None,
     ) -> Text:
         """Render the simplified status card.
 
@@ -182,6 +194,7 @@ class SimpleDisplayComponent:
             burn_rate: Tokens per minute
             output_ratio: Output tokens / input tokens ratio
             usage_over_time: Dict with 'recent', 'today', 'month' token counts
+            plan_name: User's plan (pro, max5, max20, custom)
 
         Returns:
             Rich Text renderable
@@ -193,9 +206,11 @@ class SimpleDisplayComponent:
 
         lines = []
 
-        # Top border with title (all yellow)
+        # Top border with title and plan (all yellow)
+        plan_display = plan_name.upper() if plan_name else "PRO"
+        title = f"Pacman Token Manager · {plan_display}"
         lines.append(f"\033[33m{self.TOP_LEFT}{self.HORIZONTAL * (self.width - 2)}{self.TOP_RIGHT}\033[0m")
-        lines.append(f"\033[33m{self.VERTICAL}  Pacman Token Manager{' ' * (self.width - 25)}{self.VERTICAL}\033[0m")
+        lines.append(f"\033[33m{self.VERTICAL}  {title}{' ' * (self.width - len(title) - 4)}{self.VERTICAL}\033[0m")
         lines.append(f"\033[33m{self._horizontal_line()}\033[0m")
 
         # Alert banner (only shows at thresholds)
@@ -208,9 +223,10 @@ class SimpleDisplayComponent:
         # Empty line
         lines.append(f"\033[33m{self.VERTICAL}\033[0m{' ' * (self.width - 2)}\033[33m{self.VERTICAL}\033[0m")
 
-        # Token bar with numbers
+        # Token bar with numbers (color matches state)
         bar = self._render_bar(usage_pct, width=20)
-        tkn_line = f"TKN      {state_emoji} \033[33m{bar}\033[0m {tokens_used:,} / {token_limit:,}"
+        bar_color = {"green": "32", "orange": "33", "red": "31"}[state_name]
+        tkn_line = f"TKN      {state_emoji} \033[{bar_color}m{bar}\033[0m {tokens_used:,} / {token_limit:,}"
         lines.append(f"\033[33m{self.VERTICAL}\033[0m  {tkn_line}{' ' * (self.width - len(tkn_line) - 4 + 9)}\033[33m{self.VERTICAL}\033[0m")
 
         # Tokens LEFT (the key info!)
@@ -223,10 +239,11 @@ class SimpleDisplayComponent:
         # Empty line
         lines.append(f"\033[33m{self.VERTICAL}\033[0m{' ' * (self.width - 2)}\033[33m{self.VERTICAL}\033[0m")
 
-        # Reset time
+        # Reset time with window start info
         time_str = self._format_time(minutes_to_reset)
-        reset_line = f"Resets in \033[36m{time_str}\033[0m \033[90m(rolling 5h window)\033[0m"
-        reset_stripped = f"Resets in {time_str} (rolling 5h window)"
+        window_start = self._get_window_start_time(minutes_to_reset)
+        reset_line = f"Resets in \033[36m{time_str}\033[0m \033[90m(started {window_start})\033[0m"
+        reset_stripped = f"Resets in {time_str} (started {window_start})"
         lines.append(f"\033[33m{self.VERTICAL}\033[0m  {reset_line}{' ' * (self.width - len(reset_stripped) - 4)}\033[33m{self.VERTICAL}\033[0m")
 
         # Empty line
