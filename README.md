@@ -81,11 +81,3 @@ pacman-token-manager
 
 - Python 3.9+
 - Claude Code CLI (creates the usage data files)
-
-## Author
-
-Created by [@tsuimou](https://github.com/tsuimou)
-
-## License
-
-MIT License - see [LICENSE](LICENSE)
