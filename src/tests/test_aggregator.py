@@ -5,8 +5,8 @@ from typing import List
 
 import pytest
 
-from claude_monitor.core.models import UsageEntry
-from claude_monitor.data.aggregator import (
+from pacman.core.models import UsageEntry
+from pacman.data.aggregator import (
     AggregatedPeriod,
     AggregatedStats,
     UsageAggregator,
@@ -405,7 +405,7 @@ class TestUsageAggregator:
     ) -> None:
         """Test aggregating from session blocks for daily view."""
         # Create mock session blocks
-        from claude_monitor.core.models import SessionBlock
+        from pacman.core.models import SessionBlock
 
         block1 = SessionBlock(
             id="block1",
@@ -442,7 +442,7 @@ class TestUsageAggregator:
         self, aggregator: UsageAggregator, sample_entries: List[UsageEntry]
     ) -> None:
         """Test aggregating from session blocks for monthly view."""
-        from claude_monitor.core.models import SessionBlock
+        from pacman.core.models import SessionBlock
 
         block = SessionBlock(
             id="block1",
@@ -462,7 +462,7 @@ class TestUsageAggregator:
         self, aggregator: UsageAggregator
     ) -> None:
         """Test aggregate_from_blocks with invalid view type."""
-        from claude_monitor.core.models import SessionBlock
+        from pacman.core.models import SessionBlock
 
         block = SessionBlock(
             id="block1",

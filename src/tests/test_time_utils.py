@@ -9,7 +9,7 @@ from unittest.mock import Mock, patch
 import pytest
 import pytz
 
-from claude_monitor.utils.time_utils import (
+from pacman.utils.time_utils import (
     SystemTimeDetector,
     TimeFormatDetector,
     TimezoneHandler,
@@ -62,8 +62,8 @@ class TestTimeFormatDetector:
         result = TimeFormatDetector.detect_from_cli(args)
         assert result is None
 
-    @patch("claude_monitor.utils.time_utils.HAS_BABEL", True)
-    @patch("claude_monitor.utils.time_utils.get_timezone_location")
+    @patch("pacman.utils.time_utils.HAS_BABEL", True)
+    @patch("pacman.utils.time_utils.get_timezone_location")
     def test_detect_from_timezone_with_babel_12h(self, mock_get_location: Mock) -> None:
         """Test timezone detection with Babel for 12h countries."""
         mock_get_location.return_value = "United States US"
@@ -71,8 +71,8 @@ class TestTimeFormatDetector:
         result = TimeFormatDetector.detect_from_timezone("America/New_York")
         assert result is True
 
-    @patch("claude_monitor.utils.time_utils.HAS_BABEL", True)
-    @patch("claude_monitor.utils.time_utils.get_timezone_location")
+    @patch("pacman.utils.time_utils.HAS_BABEL", True)
+    @patch("pacman.utils.time_utils.get_timezone_location")
     def test_detect_from_timezone_with_babel_24h(self, mock_get_location: Mock) -> None:
         """Test timezone detection with Babel for 24h countries."""
         mock_get_location.return_value = "Germany"
@@ -80,8 +80,8 @@ class TestTimeFormatDetector:
         result = TimeFormatDetector.detect_from_timezone("Europe/Berlin")
         assert result is False
 
-    @patch("claude_monitor.utils.time_utils.HAS_BABEL", True)
-    @patch("claude_monitor.utils.time_utils.get_timezone_location")
+    @patch("pacman.utils.time_utils.HAS_BABEL", True)
+    @patch("pacman.utils.time_utils.get_timezone_location")
     def test_detect_from_timezone_with_babel_exception(
         self, mock_get_location: Mock
     ) -> None:
@@ -91,7 +91,7 @@ class TestTimeFormatDetector:
         result = TimeFormatDetector.detect_from_timezone("Invalid/Timezone")
         assert result is None
 
-    @patch("claude_monitor.utils.time_utils.HAS_BABEL", False)
+    @patch("pacman.utils.time_utils.HAS_BABEL", False)
     def test_detect_from_timezone_no_babel(self) -> None:
         """Test timezone detection without Babel."""
         result = TimeFormatDetector.detect_from_timezone("America/New_York")
@@ -403,7 +403,7 @@ class TestTimezoneHandler:
 
     def test_init_custom_invalid(self) -> None:
         """Test TimezoneHandler initialization with invalid timezone."""
-        with patch("claude_monitor.utils.time_utils.logger") as mock_logger:
+        with patch("pacman.utils.time_utils.logger") as mock_logger:
             handler = TimezoneHandler("Invalid/Timezone")
             assert handler.default_tz == pytz.UTC
             mock_logger.warning.assert_called_once()
@@ -417,7 +417,7 @@ class TestTimezoneHandler:
     def test_validate_and_get_tz_invalid(self) -> None:
         """Test _validate_and_get_tz with invalid timezone."""
         handler = TimezoneHandler()
-        with patch("claude_monitor.utils.time_utils.logger") as mock_logger:
+        with patch("pacman.utils.time_utils.logger") as mock_logger:
             tz = handler._validate_and_get_tz("Invalid/Timezone")
             assert tz == pytz.UTC
             mock_logger.warning.assert_called_once()
@@ -457,7 +457,7 @@ class TestTimezoneHandler:
     def test_parse_timestamp_invalid_iso(self) -> None:
         """Test parsing invalid ISO timestamp."""
         handler = TimezoneHandler()
-        with patch("claude_monitor.utils.time_utils.logger"):
+        with patch("pacman.utils.time_utils.logger"):
             result = handler.parse_timestamp("2024-01-01T25:00:00Z")  # Invalid hour
             # Should try other formats or return None
             assert result is None or isinstance(result, datetime)
@@ -686,7 +686,7 @@ class TestFormattingUtilities:
         dt = datetime(2024, 1, 1, 15, 30, 45)
 
         with patch(
-            "claude_monitor.utils.time_utils.get_time_format_preference",
+            "pacman.utils.time_utils.get_time_format_preference",
             return_value=True,
         ):
             # Test Unix/Linux format
@@ -735,7 +735,7 @@ class TestFormattingUtilities:
         dt = datetime(2024, 1, 1, 15, 30, 45)
 
         with patch(
-            "claude_monitor.utils.time_utils.get_time_format_preference",
+            "pacman.utils.time_utils.get_time_format_preference",
             return_value=False,
         ):
             result = format_display_time(dt)

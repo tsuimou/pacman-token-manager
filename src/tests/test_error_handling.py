@@ -5,7 +5,7 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from claude_monitor.error_handling import ErrorLevel, report_error
+from pacman.error_handling import ErrorLevel, report_error
 
 
 class TestErrorLevel:
@@ -47,7 +47,7 @@ class TestReportError:
         """Sample tags for testing."""
         return {"environment": "test", "version": "1.0.0"}
 
-    @patch("claude_monitor.error_handling.logging.getLogger")
+    @patch("pacman.error_handling.logging.getLogger")
     def test_report_error_basic(
         self, mock_get_logger: Mock, sample_exception: ValueError
     ) -> None:
@@ -61,7 +61,7 @@ class TestReportError:
         mock_get_logger.assert_called_once_with("test_component")
         mock_logger.error.assert_called_once()
 
-    @patch("claude_monitor.error_handling.logging.getLogger")
+    @patch("pacman.error_handling.logging.getLogger")
     def test_report_error_with_full_context(
         self,
         mock_get_logger: Mock,
@@ -92,7 +92,7 @@ class TestReportError:
         assert call_args[1]["extra"]["data"] == sample_context_data
         assert call_args[1]["extra"]["tags"] == sample_tags
 
-    @patch("claude_monitor.error_handling.logging.getLogger")
+    @patch("pacman.error_handling.logging.getLogger")
     def test_report_error_with_info_level(
         self, mock_get_logger: Mock, sample_exception: ValueError
     ) -> None:
@@ -110,7 +110,7 @@ class TestReportError:
         mock_get_logger.assert_called_once_with("test_component")
         mock_logger.info.assert_called_once()
 
-    @patch("claude_monitor.error_handling.logging.getLogger")
+    @patch("pacman.error_handling.logging.getLogger")
     def test_report_error_logging_only(
         self, mock_get_logger: Mock, sample_exception: ValueError
     ) -> None:
@@ -126,7 +126,7 @@ class TestReportError:
         # Verify logging was called
         mock_logger.error.assert_called_once()
 
-    @patch("claude_monitor.error_handling.logging.getLogger")
+    @patch("pacman.error_handling.logging.getLogger")
     def test_report_error_with_context(
         self,
         mock_get_logger: Mock,
@@ -148,7 +148,7 @@ class TestReportError:
         mock_get_logger.assert_called_once_with("test_component")
         mock_logger.error.assert_called_once()
 
-    @patch("claude_monitor.error_handling.logging.getLogger")
+    @patch("pacman.error_handling.logging.getLogger")
     def test_report_error_exception_handling(
         self, mock_get_logger: Mock, sample_exception: ValueError
     ) -> None:
@@ -168,7 +168,7 @@ class TestReportError:
         """Test error reporting with None exception."""
         # Should handle gracefully without crashing
         with patch(
-            "claude_monitor.error_handling.logging.getLogger"
+            "pacman.error_handling.logging.getLogger"
         ) as mock_get_logger:
             mock_logger = Mock()
             mock_get_logger.return_value = mock_logger
@@ -181,7 +181,7 @@ class TestReportError:
     def test_report_error_empty_component(self, sample_exception: ValueError) -> None:
         """Test error reporting with empty component name."""
         with patch(
-            "claude_monitor.error_handling.logging.getLogger"
+            "pacman.error_handling.logging.getLogger"
         ) as mock_get_logger:
             mock_logger = Mock()
             mock_get_logger.return_value = mock_logger
@@ -191,7 +191,7 @@ class TestReportError:
             # Should still work
             mock_logger.error.assert_called()
 
-    @patch("claude_monitor.error_handling.logging.getLogger")
+    @patch("pacman.error_handling.logging.getLogger")
     def test_report_error_no_tags(
         self, mock_get_logger: Mock, sample_exception: ValueError
     ) -> None:
@@ -205,7 +205,7 @@ class TestReportError:
         mock_get_logger.assert_called_once_with("test_component")
         mock_logger.error.assert_called_once()
 
-    @patch("claude_monitor.error_handling.logging.getLogger")
+    @patch("pacman.error_handling.logging.getLogger")
     def test_report_error_no_context(
         self, mock_get_logger: Mock, sample_exception: ValueError
     ) -> None:
@@ -224,7 +224,7 @@ class TestReportError:
         mock_get_logger.assert_called_once_with("test_component")
         mock_logger.error.assert_called_once()
 
-    @patch("claude_monitor.error_handling.logging.getLogger")
+    @patch("pacman.error_handling.logging.getLogger")
     def test_report_error_complex_exception(self, mock_get_logger: Mock) -> None:
         """Test error reporting with complex exception."""
         mock_logger = Mock()
@@ -243,7 +243,7 @@ class TestReportError:
         mock_get_logger.assert_called_once_with("test_component")
         mock_logger.error.assert_called_once()
 
-    @patch("claude_monitor.error_handling.logging.getLogger")
+    @patch("pacman.error_handling.logging.getLogger")
     def test_report_error_empty_tags_dict(
         self, mock_get_logger: Mock, sample_exception: ValueError
     ) -> None:
@@ -261,7 +261,7 @@ class TestReportError:
         mock_get_logger.assert_called_once_with("test_component")
         mock_logger.error.assert_called_once()
 
-    @patch("claude_monitor.error_handling.logging.getLogger")
+    @patch("pacman.error_handling.logging.getLogger")
     def test_report_error_special_characters_in_component(
         self, mock_get_logger: Mock, sample_exception: ValueError
     ) -> None:
@@ -294,7 +294,7 @@ class TestErrorHandlingEdgeCases:
         # Note: Since ErrorLevel(str, Enum), string values are equal to enum values
         assert "info" in levels  # String IS the same as enum for this type
 
-    @patch("claude_monitor.error_handling.logging.getLogger")
+    @patch("pacman.error_handling.logging.getLogger")
     def test_report_error_with_unicode_data(self, mock_get_logger: Mock) -> None:
         """Test error reporting with unicode data."""
         mock_logger = Mock()

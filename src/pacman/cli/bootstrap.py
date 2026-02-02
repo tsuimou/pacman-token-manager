@@ -7,7 +7,7 @@ from logging import Handler
 from pathlib import Path
 from typing import List, Optional
 
-from claude_monitor.utils.time_utils import TimezoneHandler
+from pacman.utils.time_utils import TimezoneHandler
 
 
 def setup_logging(

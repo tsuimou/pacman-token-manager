@@ -8,7 +8,7 @@ import logging
 from datetime import datetime
 from typing import Any, Optional
 
-from claude_monitor.utils.time_utils import TimezoneHandler, get_time_format_preference
+from pacman.utils.time_utils import TimezoneHandler, get_time_format_preference
 
 logger: logging.Logger = logging.getLogger(__name__)
 

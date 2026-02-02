@@ -389,6 +389,11 @@ class DisplayController:
         )
         output_ratio = total_output / total_input if total_input > 0 else 1.0
 
+        # Calculate usage over time (5hr window and weekly)
+        usage_over_time = self._calculate_usage_over_time(
+            active_block, data.get("blocks", []), current_time
+        )
+
         # Render with simple display
         return self.simple_display.render(
             tokens_used=tokens_used,
@@ -396,8 +401,62 @@ class DisplayController:
             minutes_to_reset=minutes_to_reset,
             model_distribution=model_distribution,
             burn_rate=burn_rate,
-            output_ratio=output_ratio,
+            usage_over_time=usage_over_time,
         )
+
+    def _calculate_usage_over_time(
+        self,
+        active_block: Dict[str, Any],
+        blocks: List[Dict[str, Any]],
+        current_time: datetime,
+    ) -> Dict[str, int]:
+        """Calculate usage for 5hr window and weekly periods.
+
+        Args:
+            active_block: Current active session block
+            blocks: All usage blocks
+            current_time: Current UTC time
+
+        Returns:
+            Dict with 'window_5hr' and 'weekly' token counts
+        """
+        # 5hr window is just the active block's tokens
+        window_5hr = active_block.get("billableTokens") or active_block.get("totalTokens", 0)
+
+        # Weekly: sum tokens from last 7 days
+        seven_days_ago = current_time - timedelta(days=7)
+        weekly_tokens = 0
+
+        for block in blocks:
+            if not isinstance(block, dict):
+                continue
+
+            # Parse block start time
+            start_time_str = block.get("startTime")
+            if not start_time_str:
+                continue
+
+            try:
+                # Parse ISO format datetime
+                if start_time_str.endswith("Z"):
+                    start_time_str = start_time_str[:-1] + "+00:00"
+                block_start = datetime.fromisoformat(start_time_str)
+
+                # Ensure timezone aware
+                if block_start.tzinfo is None:
+                    block_start = block_start.replace(tzinfo=timezone.utc)
+
+                # Check if within last 7 days
+                if block_start >= seven_days_ago:
+                    block_tokens = block.get("billableTokens") or block.get("totalTokens", 0)
+                    weekly_tokens += block_tokens
+            except (ValueError, TypeError):
+                continue
+
+        return {
+            "window_5hr": window_5hr,
+            "weekly": weekly_tokens,
+        }
 
     def _calculate_top_contributors(
         self,

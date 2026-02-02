@@ -6,7 +6,7 @@ import pytest
 from rich.panel import Panel
 from rich.table import Table
 
-from claude_monitor.ui.table_views import TableViewsController
+from pacman.ui.table_views import TableViewsController
 
 
 class TestTableViewsController:

@@ -4,14 +4,14 @@ import logging
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional, Protocol
 
-from claude_monitor.core.models import (
+from pacman.core.models import (
     BurnRate,
     TokenCounts,
     UsageProjection,
 )
-from claude_monitor.core.p90_calculator import P90Calculator
-from claude_monitor.error_handling import report_error
-from claude_monitor.utils.time_utils import TimezoneHandler
+from pacman.core.p90_calculator import P90Calculator
+from pacman.error_handling import report_error
+from pacman.utils.time_utils import TimezoneHandler
 
 logger: logging.Logger = logging.getLogger(__name__)
 

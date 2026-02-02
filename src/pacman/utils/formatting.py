@@ -7,8 +7,8 @@ import logging
 from datetime import datetime
 from typing import Any, Optional, Union
 
-from claude_monitor.utils.time_utils import format_display_time as _format_display_time
-from claude_monitor.utils.time_utils import get_time_format_preference
+from pacman.utils.time_utils import format_display_time as _format_display_time
+from pacman.utils.time_utils import get_time_format_preference
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +58,7 @@ def format_time(minutes: float) -> str:
     Returns:
         Formatted time string
     """
-    from claude_monitor.utils.time_utils import format_time as _format_time
+    from pacman.utils.time_utils import format_time as _format_time
 
     return _format_time(minutes)
 

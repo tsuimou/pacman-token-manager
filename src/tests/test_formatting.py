@@ -3,13 +3,13 @@
 from datetime import datetime, timezone
 from unittest.mock import Mock, patch
 
-from claude_monitor.utils.formatting import (
+from pacman.utils.formatting import (
     format_currency,
     format_display_time,
     format_time,
     get_time_format_preference,
 )
-from claude_monitor.utils.model_utils import (
+from pacman.utils.model_utils import (
     get_model_display_name,
     get_model_generation,
     is_claude_model,
@@ -87,7 +87,7 @@ class TestFormatCurrency:
 class TestGetTimeFormatPreference:
     """Test cases for get_time_format_preference function."""
 
-    @patch("claude_monitor.utils.time_utils.TimeFormatDetector.get_preference")
+    @patch("pacman.utils.time_utils.TimeFormatDetector.get_preference")
     def test_get_time_format_preference_no_args(self, mock_get_pref: Mock) -> None:
         """Test getting time format preference without args."""
         mock_get_pref.return_value = True
@@ -95,7 +95,7 @@ class TestGetTimeFormatPreference:
         mock_get_pref.assert_called_once_with(None)
         assert result is True
 
-    @patch("claude_monitor.utils.time_utils.TimeFormatDetector.get_preference")
+    @patch("pacman.utils.time_utils.TimeFormatDetector.get_preference")
     def test_get_time_format_preference_with_args(self, mock_get_pref: Mock) -> None:
         """Test getting time format preference with args."""
         mock_args = {"time_format": "12h"}
@@ -112,7 +112,7 @@ class TestFormatDisplayTime:
         """Set up test datetime."""
         self.test_dt = datetime(2024, 1, 1, 15, 30, 45, tzinfo=timezone.utc)
 
-    @patch("claude_monitor.utils.time_utils.get_time_format_preference")
+    @patch("pacman.utils.time_utils.get_time_format_preference")
     def test_format_display_time_24h_with_seconds(self, mock_pref: Mock) -> None:
         """Test 24-hour format with seconds."""
         mock_pref.return_value = False
@@ -120,7 +120,7 @@ class TestFormatDisplayTime:
         result = format_display_time(dt, use_12h_format=False, include_seconds=True)
         assert result == "15:30:45"
 
-    @patch("claude_monitor.utils.time_utils.get_time_format_preference")
+    @patch("pacman.utils.time_utils.get_time_format_preference")
     def test_format_display_time_24h_without_seconds(self, mock_pref: Mock) -> None:
         """Test 24-hour format without seconds."""
         mock_pref.return_value = False
@@ -128,7 +128,7 @@ class TestFormatDisplayTime:
         result = format_display_time(dt, use_12h_format=False, include_seconds=False)
         assert result == "15:30"
 
-    @patch("claude_monitor.utils.time_utils.get_time_format_preference")
+    @patch("pacman.utils.time_utils.get_time_format_preference")
     def test_format_display_time_12h_with_seconds(self, mock_pref: Mock) -> None:
         """Test 12-hour format with seconds."""
         mock_pref.return_value = True
@@ -137,7 +137,7 @@ class TestFormatDisplayTime:
         # Should be either "3:30:45 PM" (Unix) or "03:30:45 PM" (Windows fallback)
         assert "3:30:45 PM" in result or result == "03:30:45 PM"
 
-    @patch("claude_monitor.utils.time_utils.get_time_format_preference")
+    @patch("pacman.utils.time_utils.get_time_format_preference")
     def test_format_display_time_12h_without_seconds(self, mock_pref: Mock) -> None:
         """Test 12-hour format without seconds."""
         mock_pref.return_value = True
@@ -146,7 +146,7 @@ class TestFormatDisplayTime:
         # Should be either "3:30 PM" (Unix) or "03:30 PM" (Windows fallback)
         assert "3:30 PM" in result or result == "03:30 PM"
 
-    @patch("claude_monitor.utils.time_utils.get_time_format_preference")
+    @patch("pacman.utils.time_utils.get_time_format_preference")
     def test_format_display_time_auto_preference(self, mock_pref: Mock) -> None:
         """Test automatic preference detection."""
         mock_pref.return_value = True
@@ -298,7 +298,7 @@ class TestFormattingAdvanced:
         """Test get_time_format_preference with edge cases."""
         # Test with None args
         with patch(
-            "claude_monitor.utils.time_utils.TimeFormatDetector.get_preference"
+            "pacman.utils.time_utils.TimeFormatDetector.get_preference"
         ) as mock_pref:
             mock_pref.return_value = True
             result = get_time_format_preference(None)
@@ -308,7 +308,7 @@ class TestFormattingAdvanced:
         # Test with empty args object
         empty_args = type("Args", (), {})()
         with patch(
-            "claude_monitor.utils.time_utils.TimeFormatDetector.get_preference"
+            "pacman.utils.time_utils.TimeFormatDetector.get_preference"
         ) as mock_pref:
             mock_pref.return_value = False
             result = get_time_format_preference(empty_args)
@@ -317,12 +317,12 @@ class TestFormattingAdvanced:
 
     def test_internal_get_pref_function(self) -> None:
         """Test the internal _get_pref helper function."""
-        from claude_monitor.utils.formatting import _get_pref
+        from pacman.utils.formatting import _get_pref
 
         # Test with mock args
         mock_args = Mock()
         with patch(
-            "claude_monitor.utils.formatting.get_time_format_preference"
+            "pacman.utils.formatting.get_time_format_preference"
         ) as mock_pref:
             mock_pref.return_value = True
             result = _get_pref(mock_args)

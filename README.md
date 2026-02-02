@@ -6,36 +6,33 @@ Tool for monitoring more detail info on token usage in your terminal.
 ┌──────────────────────────────────────────────────────────────┐
 │  Pacman Token Manager                                        │
 ├──────────────────────────────────────────────────────────────┤
-│  Running low · Resets in 2h 14m (started 5:00 PM)            │
+│  Halfway there · Resets in 4h 25m (started 10:00 AM)         │
 ├──────────────────────────────────────────────────────────────┤
 │                                                              │
-│  TKN ███████████████░░░░░ 580,000 / 1,000,000                │
-│  420k left before you have to wait                           │
-│                                                              │
-│  Resets in 2h 14m (started 5:00 PM)                          │
+│  TKN █████░░░░░░░░░░░░░░░  27%  193,920 / 728,474            │
+│  534k left · Resets in 4h 25m                                │
 │                                                              │
 ├─ Usage over time ────────────────────────────────────────────┤
 │                                                              │
-│  Period             Usage        TKN                         │
-│  Recent session     ██░░░░░░░░░░ 116k                        │
-│  Today              ██████░░░░░░ 311k                        │
-│  This month         ████████████ 545k                        │
+│  Period             Usage              TKN                   │
+│  Current session    ███░░░░░░░░░  27%   193k                 │
+│  Resets in 4h 25m                                            │
+│                                                              │
+│  Current week                      4.6m                      │
+│  (7-day rolling total)                                       │
 │                                                              │
 ├─ Breakdown ──────────────────────────────────────────────────┤
 │                                                              │
 │  By Model           Usage        TKN                         │
-│  Opus               ████████████ 580k                        │
+│  Opus               ████████████ 183k                        │
+│  Sonnet             ░░░░░░░░░░░░ 10k                         │
 │                                                              │
-│  By Project         Usage        TKN                         │
-│  subagents          ████████████ 302k                        │
-│  my-project         ███████████░ 278k                        │
+├─ Guidance ───────────────────────────────────────────────────┤
 │                                                              │
-├─ Next step ──────────────────────────────────────────────────┤
+│  Opus is handling 75% of your work. Sonnet is often          │
+│  sufficient and more economical.                             │
 │                                                              │
-│  [1] Switch to a lighter model                               │
-│  [2] Run /compact to reduce context                          │
-│  [3] Clean up long conversations                             │
-│  [4] Do nothing for now                                      │
+│  → Switch to Sonnet?  [Y]es  [N]o thanks                     │
 │                                                              │
 │  Ctrl+C to exit                                              │
 └──────────────────────────────────────────────────────────────┘
@@ -67,9 +64,40 @@ pacman-token-manager
 - **Smart alerts** - Warns you at 50%, 75%, and 90% usage
 - **Model breakdown** - See which models are eating your tokens
 - **Project breakdown** - See which projects are using your quota
-- **Usage over time** - Track session, daily, and monthly usage
-- **Actionable suggestions** - Know what to do when running low
+- **Usage over time** - Track 5hr window and weekly usage
+- **Contextual guidance** - Smart recommendations based on your usage patterns
+- **Interactive actions** - Press Y/N to execute suggested actions
 - **Zero token cost** - Pacman reads local files, doesn't call the API
+
+## Display Information
+
+| Section | Data Shown |
+|---------|------------|
+| **Token Status** | Progress bar + % + tokens used/limit + reset time |
+| **Usage Over Time** | Current session (% + reset time) and Current week (7-day total) |
+| **Breakdown** | By Model and By Project with token counts |
+| **Guidance** | Context-aware recommendation + optional Y/N action |
+
+## Smart Guidance
+
+Pacman provides contextual guidance based on your usage:
+
+| Condition | Guidance | Action |
+|-----------|----------|--------|
+| ≥90% usage | "You're almost at your limit..." | → Run /compact? [Y/N] |
+| High burn + ≥70% | "Using tokens quickly..." | → Run /compact? [Y/N] |
+| Heavy Opus (>60%) | "Opus is handling X%..." | → Switch to Sonnet? [Y/N] |
+| ≥75% usage | "Running low on tokens..." | → Run /compact? [Y/N] |
+| High burn rate | "High token velocity..." | (informational) |
+| 50-74% usage | "Halfway through..." | (informational) |
+| <50% usage | "You're in good shape." | (none needed) |
+
+## Interactive Actions
+
+When a Y/N prompt appears, you can:
+- Press **Y** to execute the suggested command
+- Press **N** to dismiss (won't show again this session)
+- Press **Ctrl+C** to exit
 
 ## Token Calculation
 

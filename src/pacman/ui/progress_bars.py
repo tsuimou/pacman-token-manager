@@ -8,7 +8,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Any, Final, Protocol, TypedDict
 
-from claude_monitor.utils.time_utils import percentage
+from pacman.utils.time_utils import percentage
 
 
 # Type definitions for progress bar components
@@ -234,7 +234,7 @@ class TimeProgressBar(BaseProgressBar):
         Returns:
             Formatted time progress bar string
         """
-        from claude_monitor.utils.time_utils import format_time
+        from pacman.utils.time_utils import format_time
 
         if total_minutes <= 0:
             progress_percentage = 0

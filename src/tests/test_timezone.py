@@ -7,7 +7,7 @@ from unittest.mock import Mock, patch
 import pytest
 import pytz
 
-from claude_monitor.utils.timezone import (
+from pacman.utils.timezone import (
     TimezoneHandler,
     _detect_timezone_time_preference,
 )
@@ -37,7 +37,7 @@ class TestTimezoneHandler:
 
     def test_init_invalid_timezone_fallback(self) -> None:
         """Test initialization with invalid timezone falls back to UTC."""
-        with patch("claude_monitor.utils.time_utils.logger") as mock_logger:
+        with patch("pacman.utils.time_utils.logger") as mock_logger:
             handler = TimezoneHandler(default_tz="Invalid/Timezone")
 
             assert handler.default_tz == pytz.UTC
@@ -317,7 +317,7 @@ class TestTimezonePreferenceDetection:
         """Test that _detect_timezone_time_preference delegates correctly."""
         # This function delegates to get_time_format_preference
         with patch(
-            "claude_monitor.utils.time_utils.get_time_format_preference",
+            "pacman.utils.time_utils.get_time_format_preference",
             return_value=True,
         ):
             result = _detect_timezone_time_preference()
@@ -329,7 +329,7 @@ class TestTimezonePreferenceDetection:
         mock_args.time_format = "24h"
 
         with patch(
-            "claude_monitor.utils.time_utils.get_time_format_preference",
+            "pacman.utils.time_utils.get_time_format_preference",
             return_value=False,
         ):
             result = _detect_timezone_time_preference(mock_args)

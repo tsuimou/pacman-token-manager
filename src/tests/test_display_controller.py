@@ -6,7 +6,7 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from claude_monitor.ui.display_controller import (
+from pacman.ui.display_controller import (
     DisplayController,
     LiveDisplayManager,
     ScreenBufferManager,
@@ -19,7 +19,7 @@ class TestDisplayController:
 
     @pytest.fixture
     def controller(self) -> Any:
-        with patch("claude_monitor.ui.display_controller.NotificationManager"):
+        with patch("pacman.ui.display_controller.NotificationManager"):
             return DisplayController()
 
     @pytest.fixture
@@ -101,7 +101,7 @@ class TestDisplayController:
 
         assert result == (200000, 200000)
 
-    @patch("claude_monitor.ui.display_controller.calculate_hourly_burn_rate")
+    @patch("pacman.ui.display_controller.calculate_hourly_burn_rate")
     def test_calculate_time_data(self, mock_burn_rate, controller):
         """Test time data calculation."""
         session_data = {
@@ -125,7 +125,7 @@ class TestDisplayController:
             assert result["total_session_minutes"] == 120
             mock_calc.assert_called_once_with(session_data, current_time)
 
-    @patch("claude_monitor.ui.display_controller.Plans.is_valid_plan")
+    @patch("pacman.ui.display_controller.Plans.is_valid_plan")
     def test_calculate_cost_predictions_valid_plan(
         self, mock_is_valid, controller, sample_args
     ):
@@ -265,9 +265,9 @@ class TestDisplayController:
             mock_should.assert_called_with("cost_will_exceed")
             mock_mark.assert_called_with("cost_will_exceed")
 
-    @patch("claude_monitor.ui.display_controller.TimezoneHandler")
-    @patch("claude_monitor.ui.display_controller.get_time_format_preference")
-    @patch("claude_monitor.ui.display_controller.format_display_time")
+    @patch("pacman.ui.display_controller.TimezoneHandler")
+    @patch("pacman.ui.display_controller.get_time_format_preference")
+    @patch("pacman.ui.display_controller.format_display_time")
     def test_format_display_times(
         self,
         mock_format_time,
@@ -302,7 +302,7 @@ class TestDisplayController:
         result = controller._calculate_model_distribution({})
         assert result == {}
 
-    @patch("claude_monitor.ui.display_controller.normalize_model_name")
+    @patch("pacman.ui.display_controller.normalize_model_name")
     def test_calculate_model_distribution_valid_stats(self, mock_normalize, controller):
         """Test model distribution calculation with valid stats."""
         mock_normalize.side_effect = lambda x: {
@@ -340,9 +340,9 @@ class TestDisplayController:
         assert result is not None
         # Should return no active session screen
 
-    @patch("claude_monitor.ui.display_controller.Plans.is_valid_plan")
-    @patch("claude_monitor.core.plans.get_cost_limit")
-    @patch("claude_monitor.ui.display_controller.Plans.get_message_limit")
+    @patch("pacman.ui.display_controller.Plans.is_valid_plan")
+    @patch("pacman.core.plans.get_cost_limit")
+    @patch("pacman.ui.display_controller.Plans.get_message_limit")
     def test_create_data_display_with_active_block(
         self,
         mock_msg_limit,
@@ -440,7 +440,7 @@ class TestLiveDisplayManager:
 
         assert manager._console is mock_console
 
-    @patch("claude_monitor.ui.display_controller.Live")
+    @patch("pacman.ui.display_controller.Live")
     def test_create_live_display_default(self, mock_live_class):
         """Test creating live display with defaults."""
         mock_live = Mock()
@@ -457,7 +457,7 @@ class TestLiveDisplayManager:
             vertical_overflow="visible",
         )
 
-    @patch("claude_monitor.ui.display_controller.Live")
+    @patch("pacman.ui.display_controller.Live")
     def test_create_live_display_custom(self, mock_live_class):
         """Test creating live display with custom parameters."""
         mock_live = Mock()
@@ -487,9 +487,9 @@ class TestScreenBufferManager:
 
         assert manager.console is None
 
-    @patch("claude_monitor.terminal.themes.get_themed_console")
-    @patch("claude_monitor.ui.display_controller.Text")
-    @patch("claude_monitor.ui.display_controller.Group")
+    @patch("pacman.terminal.themes.get_themed_console")
+    @patch("pacman.ui.display_controller.Text")
+    @patch("pacman.ui.display_controller.Group")
     def test_create_screen_renderable(self, mock_group, mock_text, mock_get_console):
         """Test creating screen renderable from buffer."""
         mock_console = Mock()
@@ -510,8 +510,8 @@ class TestScreenBufferManager:
         assert mock_text.from_markup.call_count == 3
         mock_group.assert_called_once()
 
-    @patch("claude_monitor.terminal.themes.get_themed_console")
-    @patch("claude_monitor.ui.display_controller.Group")
+    @patch("pacman.terminal.themes.get_themed_console")
+    @patch("pacman.ui.display_controller.Group")
     def test_create_screen_renderable_with_objects(self, mock_group, mock_get_console):
         """Test creating screen renderable with mixed string and object content."""
         mock_console = Mock()
@@ -536,7 +536,7 @@ class TestDisplayControllerEdgeCases:
     @pytest.fixture
     def controller(self):
         """Create a DisplayController instance."""
-        with patch("claude_monitor.ui.display_controller.NotificationManager"):
+        with patch("pacman.ui.display_controller.NotificationManager"):
             return DisplayController()
 
     @pytest.fixture
@@ -603,7 +603,7 @@ class TestDisplayControllerAdvanced:
     @pytest.fixture
     def controller(self):
         """Create a DisplayController instance."""
-        with patch("claude_monitor.ui.display_controller.NotificationManager"):
+        with patch("pacman.ui.display_controller.NotificationManager"):
             return DisplayController()
 
     @pytest.fixture
@@ -616,9 +616,9 @@ class TestDisplayControllerAdvanced:
         args.custom_limit_tokens = None
         return args
 
-    @patch("claude_monitor.ui.display_controller.AdvancedCustomLimitDisplay")
-    @patch("claude_monitor.ui.display_controller.Plans.get_message_limit")
-    @patch("claude_monitor.core.plans.get_cost_limit")
+    @patch("pacman.ui.display_controller.AdvancedCustomLimitDisplay")
+    @patch("pacman.ui.display_controller.Plans.get_message_limit")
+    @patch("pacman.core.plans.get_cost_limit")
     def test_create_data_display_custom_plan(
         self,
         mock_get_cost,
@@ -791,7 +791,7 @@ class TestDisplayControllerAdvanced:
         current_time = datetime(2024, 1, 1, 12, 30, tzinfo=timezone.utc)
 
         with patch(
-            "claude_monitor.ui.display_controller.calculate_hourly_burn_rate"
+            "pacman.ui.display_controller.calculate_hourly_burn_rate"
         ) as mock_burn:
             mock_burn.return_value = 5.5
 
@@ -916,7 +916,7 @@ class TestSessionCalculator:
         time_data = {"elapsed_session_minutes": 60}
         cost_limit = 10.0
 
-        with patch("claude_monitor.ui.display_controller.datetime") as mock_datetime:
+        with patch("pacman.ui.display_controller.datetime") as mock_datetime:
             current_time = datetime(2024, 1, 1, 12, 0, tzinfo=timezone.utc)
             mock_datetime.now.return_value = current_time
             mock_datetime.side_effect = lambda *args, **kw: datetime(*args, **kw)
@@ -938,7 +938,7 @@ class TestSessionCalculator:
             "reset_time": datetime(2024, 1, 1, 17, 0, tzinfo=timezone.utc),
         }
 
-        with patch("claude_monitor.ui.display_controller.datetime") as mock_datetime:
+        with patch("pacman.ui.display_controller.datetime") as mock_datetime:
             current_time = datetime(2024, 1, 1, 12, 0, tzinfo=timezone.utc)
             mock_datetime.now.return_value = current_time
             mock_datetime.side_effect = lambda *args, **kw: datetime(*args, **kw)
@@ -960,7 +960,7 @@ class TestSessionCalculator:
         }
         cost_limit = 10.0
 
-        with patch("claude_monitor.ui.display_controller.datetime") as mock_datetime:
+        with patch("pacman.ui.display_controller.datetime") as mock_datetime:
             current_time = datetime(2024, 1, 1, 12, 0, tzinfo=timezone.utc)
             mock_datetime.now.return_value = current_time
             mock_datetime.side_effect = lambda *args, **kw: datetime(*args, **kw)
@@ -974,14 +974,14 @@ class TestSessionCalculator:
 
 
 # Test the legacy function
-@patch("claude_monitor.ui.display_controller.ScreenBufferManager")
+@patch("pacman.ui.display_controller.ScreenBufferManager")
 def test_create_screen_renderable_legacy(mock_manager_class):
     """Test the legacy create_screen_renderable function."""
     mock_manager = Mock()
     mock_manager_class.return_value = mock_manager
     mock_manager.create_screen_renderable.return_value = "rendered"
 
-    from claude_monitor.ui.display_controller import create_screen_renderable
+    from pacman.ui.display_controller import create_screen_renderable
 
     screen_buffer = ["line1", "line2"]
     result = create_screen_renderable(screen_buffer)

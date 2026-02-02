@@ -11,7 +11,7 @@ import pytz
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-from claude_monitor import __version__
+from pacman import __version__
 
 logger = logging.getLogger(__name__)
 
@@ -112,14 +112,14 @@ class Settings(BaseSettings):
     @staticmethod
     def _get_system_timezone() -> str:
         """Lazy import to avoid circular dependencies."""
-        from claude_monitor.utils.time_utils import get_system_timezone
+        from pacman.utils.time_utils import get_system_timezone
 
         return get_system_timezone()
 
     @staticmethod
     def _get_system_time_format() -> str:
         """Lazy import to avoid circular dependencies."""
-        from claude_monitor.utils.time_utils import get_system_time_format
+        from pacman.utils.time_utils import get_system_time_format
 
         return get_system_time_format()
 
@@ -323,7 +323,7 @@ class Settings(BaseSettings):
         if settings.theme == "auto" or (
             "theme" not in cli_provided_fields and not clear_config
         ):
-            from claude_monitor.terminal.themes import (
+            from pacman.terminal.themes import (
                 BackgroundDetector,
                 BackgroundType,
             )

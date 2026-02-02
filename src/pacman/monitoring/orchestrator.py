@@ -5,11 +5,11 @@ import threading
 import time
 from typing import Any, Callable, Dict, List, Optional
 
-from claude_monitor.core.plans import DEFAULT_TOKEN_LIMIT, get_token_limit
-from claude_monitor.error_handling import report_error
-from claude_monitor.monitoring.data_manager import DataManager
-from claude_monitor.monitoring.session_monitor import SessionMonitor
-from claude_monitor.monitoring.threshold_alert import get_threshold_alert
+from pacman.core.plans import DEFAULT_TOKEN_LIMIT, get_token_limit
+from pacman.error_handling import report_error
+from pacman.monitoring.data_manager import DataManager
+from pacman.monitoring.session_monitor import SessionMonitor
+from pacman.monitoring.threshold_alert import get_threshold_alert
 
 logger = logging.getLogger(__name__)
 

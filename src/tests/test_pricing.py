@@ -4,8 +4,8 @@ from typing import Dict, List, Union
 
 import pytest
 
-from claude_monitor.core.models import CostMode, TokenCounts
-from claude_monitor.core.pricing import PricingCalculator
+from pacman.core.models import CostMode, TokenCounts
+from pacman.core.pricing import PricingCalculator
 
 
 class TestPricingCalculator:

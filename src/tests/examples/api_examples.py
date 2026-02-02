@@ -7,8 +7,8 @@ to analyze Claude usage data in various ways.
 import json
 
 # Import functions directly from the analysis module
-from claude_monitor.data.analysis import analyze_usage
-from claude_monitor.utils.formatting import format_currency, format_time
+from pacman.data.analysis import analyze_usage
+from pacman.utils.formatting import format_currency, format_time
 
 
 # Create helper functions that replace the removed facade functions
@@ -271,7 +271,7 @@ def example_direct_import():
     print("\n=== Example 6: Direct Import ===")
 
     try:
-        # You can import directly from claude_monitor module
+        # You can import directly from pacman module
         blocks = analyze_usage_direct()
 
         print(f"Direct import worked! Found {len(blocks)} blocks")

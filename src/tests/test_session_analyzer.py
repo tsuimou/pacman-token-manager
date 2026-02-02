@@ -3,8 +3,8 @@
 from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Optional, Union
 
-from claude_monitor.core.models import SessionBlock, TokenCounts, UsageEntry
-from claude_monitor.data.analyzer import SessionAnalyzer
+from pacman.core.models import SessionBlock, TokenCounts, UsageEntry
+from pacman.data.analyzer import SessionAnalyzer
 
 
 class TestSessionAnalyzer:

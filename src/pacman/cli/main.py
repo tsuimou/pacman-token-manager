@@ -34,6 +34,7 @@ from pacman.terminal.manager import (
     restore_terminal,
     setup_terminal,
 )
+from pacman.terminal.input_handler import poll_keyboard, handle_keypress
 from pacman.terminal.themes import get_themed_console, print_themed
 from pacman.ui.display_controller import DisplayController
 from pacman.ui.table_views import TableViewsController
@@ -264,14 +265,14 @@ def _run_monitoring(args: argparse.Namespace) -> None:
             if not orchestrator.wait_for_initial_data(timeout=10.0):
                 logger.warning("Timeout waiting for initial data")
 
-            # Main loop - live display is already active
-            # Use signal.pause() for more efficient waiting
-            try:
-                signal.pause()
-            except AttributeError:
-                # Fallback for Windows which doesn't support signal.pause()
-                while True:
-                    time.sleep(1)
+            # Main loop - poll for keyboard input while display is active
+            while True:
+                key = poll_keyboard(timeout=0.2)
+                if key:
+                    result = handle_keypress(key)
+                    if result:
+                        # Show feedback briefly - it will be overwritten on next update
+                        logger.info(result)
         finally:
             # Stop monitoring first
             if "orchestrator" in locals():

@@ -9,7 +9,7 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from claude_monitor.core.settings import LastUsedParams, Settings
+from pacman.core.settings import LastUsedParams, Settings
 
 
 class TestLastUsedParams:
@@ -129,7 +129,7 @@ class TestLastUsedParams:
         assert non_existent_dir.exists()
         assert last_used.params_file.exists()
 
-    @patch("claude_monitor.core.settings.logger")
+    @patch("pacman.core.settings.logger")
     def test_save_error_handling(self, mock_logger: Mock) -> None:
         """Test error handling during save operation."""
         # Mock file operations to raise exception
@@ -184,7 +184,7 @@ class TestLastUsedParams:
         result = self.last_used.load()
         assert result == {}
 
-    @patch("claude_monitor.core.settings.logger")
+    @patch("pacman.core.settings.logger")
     def test_load_error_handling(self, mock_logger: Mock) -> None:
         """Test error handling during load operation."""
         # Create invalid JSON file
@@ -215,7 +215,7 @@ class TestLastUsedParams:
         # Should not raise exception
         self.last_used.clear()
 
-    @patch("claude_monitor.core.settings.logger")
+    @patch("pacman.core.settings.logger")
     def test_clear_error_handling(self, mock_logger: Mock) -> None:
         """Test error handling during clear operation."""
         # Create file but mock unlink to raise exception
@@ -380,8 +380,8 @@ class TestSettings:
         with pytest.raises(ValueError):
             Settings(reset_hour=24, _cli_parse_args=[])
 
-    @patch("claude_monitor.core.settings.Settings._get_system_timezone")
-    @patch("claude_monitor.core.settings.Settings._get_system_time_format")
+    @patch("pacman.core.settings.Settings._get_system_timezone")
+    @patch("pacman.core.settings.Settings._get_system_time_format")
     def test_load_with_last_used_version_flag(
         self, mock_time_format: Mock, mock_timezone: Mock
     ) -> None:
@@ -393,8 +393,8 @@ class TestSettings:
                 mock_print.assert_called_once()
                 mock_exit.assert_called_once_with(0)
 
-    @patch("claude_monitor.core.settings.Settings._get_system_timezone")
-    @patch("claude_monitor.core.settings.Settings._get_system_time_format")
+    @patch("pacman.core.settings.Settings._get_system_timezone")
+    @patch("pacman.core.settings.Settings._get_system_time_format")
     def test_load_with_last_used_clear_flag(
         self, mock_time_format: Mock, mock_timezone: Mock
     ) -> None:
@@ -412,7 +412,7 @@ class TestSettings:
             with open(params_file, "w") as f:
                 json.dump(test_data, f)
 
-            with patch("claude_monitor.core.settings.LastUsedParams") as MockLastUsed:
+            with patch("pacman.core.settings.LastUsedParams") as MockLastUsed:
                 mock_instance = Mock()
                 MockLastUsed.return_value = mock_instance
 
@@ -421,8 +421,8 @@ class TestSettings:
                 # Should call clear
                 mock_instance.clear.assert_called_once()
 
-    @patch("claude_monitor.core.settings.Settings._get_system_timezone")
-    @patch("claude_monitor.core.settings.Settings._get_system_time_format")
+    @patch("pacman.core.settings.Settings._get_system_timezone")
+    @patch("pacman.core.settings.Settings._get_system_time_format")
     def test_load_with_last_used_merge_params(
         self, mock_time_format: Mock, mock_timezone: Mock
     ) -> None:
@@ -439,7 +439,7 @@ class TestSettings:
             "view": "realtime",
         }
 
-        with patch("claude_monitor.core.settings.LastUsedParams") as MockLastUsed:
+        with patch("pacman.core.settings.LastUsedParams") as MockLastUsed:
             mock_instance = Mock()
             mock_instance.load.return_value = test_params
             MockLastUsed.return_value = mock_instance
@@ -455,8 +455,8 @@ class TestSettings:
             # Should save current settings
             mock_instance.save.assert_called_once()
 
-    @patch("claude_monitor.core.settings.Settings._get_system_timezone")
-    @patch("claude_monitor.core.settings.Settings._get_system_time_format")
+    @patch("pacman.core.settings.Settings._get_system_timezone")
+    @patch("pacman.core.settings.Settings._get_system_time_format")
     def test_load_with_last_used_cli_priority(
         self, mock_time_format: Mock, mock_timezone: Mock
     ) -> None:
@@ -472,7 +472,7 @@ class TestSettings:
             "view": "realtime",
         }
 
-        with patch("claude_monitor.core.settings.LastUsedParams") as MockLastUsed:
+        with patch("pacman.core.settings.LastUsedParams") as MockLastUsed:
             mock_instance = Mock()
             mock_instance.load.return_value = test_params
             MockLastUsed.return_value = mock_instance
@@ -486,8 +486,8 @@ class TestSettings:
             assert settings.refresh_rate == 5  # CLI override
             assert settings.timezone == "Europe/Warsaw"  # From last used
 
-    @patch("claude_monitor.core.settings.Settings._get_system_timezone")
-    @patch("claude_monitor.core.settings.Settings._get_system_time_format")
+    @patch("pacman.core.settings.Settings._get_system_timezone")
+    @patch("pacman.core.settings.Settings._get_system_time_format")
     def test_load_with_last_used_auto_timezone(
         self, mock_time_format: Mock, mock_timezone: Mock
     ) -> None:
@@ -495,7 +495,7 @@ class TestSettings:
         mock_timezone.return_value = "America/New_York"
         mock_time_format.return_value = "12h"
 
-        with patch("claude_monitor.core.settings.LastUsedParams") as MockLastUsed:
+        with patch("pacman.core.settings.LastUsedParams") as MockLastUsed:
             mock_instance = Mock()
             mock_instance.load.return_value = {}
             MockLastUsed.return_value = mock_instance
@@ -505,8 +505,8 @@ class TestSettings:
             assert settings.timezone == "America/New_York"
             assert settings.time_format == "12h"
 
-    @patch("claude_monitor.core.settings.Settings._get_system_timezone")
-    @patch("claude_monitor.core.settings.Settings._get_system_time_format")
+    @patch("pacman.core.settings.Settings._get_system_timezone")
+    @patch("pacman.core.settings.Settings._get_system_time_format")
     def test_load_with_last_used_debug_flag(
         self, mock_time_format: Mock, mock_timezone: Mock
     ) -> None:
@@ -514,7 +514,7 @@ class TestSettings:
         mock_timezone.return_value = "UTC"
         mock_time_format.return_value = "24h"
 
-        with patch("claude_monitor.core.settings.LastUsedParams") as MockLastUsed:
+        with patch("pacman.core.settings.LastUsedParams") as MockLastUsed:
             mock_instance = Mock()
             mock_instance.load.return_value = {}
             MockLastUsed.return_value = mock_instance
@@ -524,9 +524,9 @@ class TestSettings:
             assert settings.debug is True
             assert settings.log_level == "DEBUG"
 
-    @patch("claude_monitor.core.settings.Settings._get_system_timezone")
-    @patch("claude_monitor.core.settings.Settings._get_system_time_format")
-    @patch("claude_monitor.terminal.themes.BackgroundDetector")
+    @patch("pacman.core.settings.Settings._get_system_timezone")
+    @patch("pacman.core.settings.Settings._get_system_time_format")
+    @patch("pacman.terminal.themes.BackgroundDetector")
     def test_load_with_last_used_theme_detection(
         self, MockDetector: Mock, mock_time_format: Mock, mock_timezone: Mock
     ) -> None:
@@ -538,11 +538,11 @@ class TestSettings:
         mock_detector_instance = Mock()
         MockDetector.return_value = mock_detector_instance
 
-        from claude_monitor.terminal.themes import BackgroundType
+        from pacman.terminal.themes import BackgroundType
 
         mock_detector_instance.detect_background.return_value = BackgroundType.DARK
 
-        with patch("claude_monitor.core.settings.LastUsedParams") as MockLastUsed:
+        with patch("pacman.core.settings.LastUsedParams") as MockLastUsed:
             mock_instance = Mock()
             mock_instance.load.return_value = {}
             MockLastUsed.return_value = mock_instance
@@ -551,8 +551,8 @@ class TestSettings:
 
             assert settings.theme == "dark"
 
-    @patch("claude_monitor.core.settings.Settings._get_system_timezone")
-    @patch("claude_monitor.core.settings.Settings._get_system_time_format")
+    @patch("pacman.core.settings.Settings._get_system_timezone")
+    @patch("pacman.core.settings.Settings._get_system_time_format")
     def test_load_with_last_used_custom_plan_reset(
         self, mock_time_format: Mock, mock_timezone: Mock
     ) -> None:
@@ -562,7 +562,7 @@ class TestSettings:
 
         test_params: Dict[str, int] = {"custom_limit_tokens": 5000}
 
-        with patch("claude_monitor.core.settings.LastUsedParams") as MockLastUsed:
+        with patch("pacman.core.settings.LastUsedParams") as MockLastUsed:
             mock_instance = Mock()
             mock_instance.load.return_value = test_params
             MockLastUsed.return_value = mock_instance
@@ -624,18 +624,18 @@ class TestSettingsIntegration:
             config_dir = Path(temp_dir)
 
             # Mock the config directory
-            with patch("claude_monitor.core.settings.LastUsedParams") as MockLastUsed:
+            with patch("pacman.core.settings.LastUsedParams") as MockLastUsed:
                 # Create real LastUsedParams instance with temp directory
                 real_last_used = LastUsedParams(config_dir)
                 MockLastUsed.return_value = real_last_used
 
                 with (
                     patch(
-                        "claude_monitor.core.settings.Settings._get_system_timezone",
+                        "pacman.core.settings.Settings._get_system_timezone",
                         return_value="UTC",
                     ),
                     patch(
-                        "claude_monitor.core.settings.Settings._get_system_time_format",
+                        "pacman.core.settings.Settings._get_system_time_format",
                         return_value="24h",
                     ),
                 ):

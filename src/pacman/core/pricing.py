@@ -8,7 +8,7 @@ with caching.
 
 from typing import Any, Dict, Optional
 
-from claude_monitor.core.models import CostMode, TokenCounts, normalize_model_name
+from pacman.core.models import CostMode, TokenCounts, normalize_model_name
 
 
 class PricingCalculator:

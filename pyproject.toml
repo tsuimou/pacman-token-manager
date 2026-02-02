@@ -5,7 +5,7 @@ requires = ["setuptools>=61.0.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "claude-monitor"
+name = "pacman-token-manager"
 version = "3.1.0"
 description = "A real-time terminal monitoring tool for Claude Code token usage with advanced analytics and Rich UI"
 readme = "README.md"
@@ -83,19 +83,19 @@ changelog = "https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor/blob/m
 "Discussions" = "https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor/discussions"
 
 [project.scripts]
-pacman-token-manager = "claude_monitor.__main__:main"
-pacman = "claude_monitor.__main__:main"
-pactkn = "claude_monitor.__main__:main"
-chomp = "claude_monitor.__main__:main"
-pac = "claude_monitor.__main__:main"
+pacman-token-manager = "pacman.__main__:main"
+pacman = "pacman.__main__:main"
+pactkn = "pacman.__main__:main"
+chomp = "pacman.__main__:main"
+pac = "pacman.__main__:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
-include = ["claude_monitor*"]
+include = ["pacman*"]
 exclude = ["tests*", "src/tests*"]
 
 [tool.setuptools.package-data]
-claude_monitor = ["py.typed"]
+pacman = ["py.typed"]
 
 [tool.black]
 line-length = 88
@@ -117,7 +117,7 @@ extend-exclude = '''
 [tool.isort]
 profile = "black"
 line_length = 88
-known_first_party = ["claude_monitor"]
+known_first_party = ["pacman"]
 force_single_line = true
 atomic = true
 include_trailing_comma = true
@@ -160,7 +160,7 @@ python_classes = ["Test*"]
 python_functions = ["test_*"]
 addopts = [
   "--strict-markers","--strict-config","--color=yes","--tb=short",
-  "--cov=claude_monitor","--cov-report=term-missing","--cov-report=html",
+  "--cov=pacman","--cov-report=term-missing","--cov-report=html",
   "--cov-report=xml","--cov-fail-under=70","--no-cov-on-fail","-ra","-q",
   "-m","not integration"
 ]
@@ -181,7 +181,7 @@ filterwarnings = [
 
 [tool.coverage.run]
 branch = true
-source = ["src/claude_monitor"]
+source = ["src/pacman"]
 omit = ["*/tests/*","*/test_*","*/__main__.py","*/conftest.py"]
 
 [tool.coverage.report]

@@ -7,8 +7,8 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from claude_monitor.core.plans import DEFAULT_TOKEN_LIMIT
-from claude_monitor.monitoring.orchestrator import MonitoringOrchestrator
+from pacman.core.plans import DEFAULT_TOKEN_LIMIT
+from pacman.monitoring.orchestrator import MonitoringOrchestrator
 
 
 @pytest.fixture
@@ -46,11 +46,11 @@ def orchestrator(
     """Create orchestrator with mocked dependencies."""
     with (
         patch(
-            "claude_monitor.monitoring.orchestrator.DataManager",
+            "pacman.monitoring.orchestrator.DataManager",
             return_value=mock_data_manager,
         ),
         patch(
-            "claude_monitor.monitoring.orchestrator.SessionMonitor",
+            "pacman.monitoring.orchestrator.SessionMonitor",
             return_value=mock_session_monitor,
         ),
     ):
@@ -63,8 +63,8 @@ class TestMonitoringOrchestratorInit:
     def test_init_with_defaults(self) -> None:
         """Test initialization with default parameters."""
         with (
-            patch("claude_monitor.monitoring.orchestrator.DataManager") as mock_dm,
-            patch("claude_monitor.monitoring.orchestrator.SessionMonitor") as mock_sm,
+            patch("pacman.monitoring.orchestrator.DataManager") as mock_dm,
+            patch("pacman.monitoring.orchestrator.SessionMonitor") as mock_sm,
         ):
             orchestrator = MonitoringOrchestrator()
 
@@ -81,8 +81,8 @@ class TestMonitoringOrchestratorInit:
     def test_init_with_custom_params(self) -> None:
         """Test initialization with custom parameters."""
         with (
-            patch("claude_monitor.monitoring.orchestrator.DataManager") as mock_dm,
-            patch("claude_monitor.monitoring.orchestrator.SessionMonitor"),
+            patch("pacman.monitoring.orchestrator.DataManager") as mock_dm,
+            patch("pacman.monitoring.orchestrator.SessionMonitor"),
         ):
             orchestrator = MonitoringOrchestrator(
                 update_interval=5, data_path="/custom/path"
@@ -115,7 +115,7 @@ class TestMonitoringOrchestratorLifecycle:
         """Test starting monitoring when already running."""
         orchestrator._monitoring = True
 
-        with patch("claude_monitor.monitoring.orchestrator.logger") as mock_logger:
+        with patch("pacman.monitoring.orchestrator.logger") as mock_logger:
             orchestrator.start()
 
             mock_logger.warning.assert_called_once_with("Monitoring already running")
@@ -325,7 +325,7 @@ class TestMonitoringOrchestratorFetchAndProcess:
         orchestrator.set_args(args)
 
         with patch(
-            "claude_monitor.monitoring.orchestrator.get_token_limit",
+            "pacman.monitoring.orchestrator.get_token_limit",
             return_value=200000,
         ):
             result = orchestrator._fetch_and_process_data()
@@ -377,7 +377,7 @@ class TestMonitoringOrchestratorFetchAndProcess:
         orchestrator.register_update_callback(callback2)
 
         with patch(
-            "claude_monitor.monitoring.orchestrator.get_token_limit",
+            "pacman.monitoring.orchestrator.get_token_limit",
             return_value=200000,
         ):
             result = orchestrator._fetch_and_process_data()
@@ -409,10 +409,10 @@ class TestMonitoringOrchestratorFetchAndProcess:
 
         with (
             patch(
-                "claude_monitor.monitoring.orchestrator.get_token_limit",
+                "pacman.monitoring.orchestrator.get_token_limit",
                 return_value=200000,
             ),
-            patch("claude_monitor.monitoring.orchestrator.report_error") as mock_report,
+            patch("pacman.monitoring.orchestrator.report_error") as mock_report,
         ):
             result = orchestrator._fetch_and_process_data()
 
@@ -427,7 +427,7 @@ class TestMonitoringOrchestratorFetchAndProcess:
         orchestrator.data_manager.get_data.side_effect = Exception("Fetch failed")
 
         with patch(
-            "claude_monitor.monitoring.orchestrator.report_error"
+            "pacman.monitoring.orchestrator.report_error"
         ) as mock_report:
             result = orchestrator._fetch_and_process_data()
 
@@ -448,7 +448,7 @@ class TestMonitoringOrchestratorFetchAndProcess:
         assert not orchestrator._first_data_event.is_set()
 
         with patch(
-            "claude_monitor.monitoring.orchestrator.get_token_limit",
+            "pacman.monitoring.orchestrator.get_token_limit",
             return_value=200000,
         ):
             orchestrator._fetch_and_process_data()
@@ -480,7 +480,7 @@ class TestMonitoringOrchestratorTokenLimitCalculation:
         data: Dict[str, List[Any]] = {"blocks": []}
 
         with patch(
-            "claude_monitor.monitoring.orchestrator.get_token_limit",
+            "pacman.monitoring.orchestrator.get_token_limit",
             return_value=200000,
         ) as mock_get_limit:
             result = orchestrator._calculate_token_limit(data)
@@ -503,7 +503,7 @@ class TestMonitoringOrchestratorTokenLimitCalculation:
         data: Dict[str, List[Dict[str, int]]] = {"blocks": blocks_data}
 
         with patch(
-            "claude_monitor.monitoring.orchestrator.get_token_limit",
+            "pacman.monitoring.orchestrator.get_token_limit",
             return_value=175000,
         ) as mock_get_limit:
             result = orchestrator._calculate_token_limit(data)
@@ -522,7 +522,7 @@ class TestMonitoringOrchestratorTokenLimitCalculation:
         data: Dict[str, List[Any]] = {"blocks": []}
 
         with patch(
-            "claude_monitor.monitoring.orchestrator.get_token_limit",
+            "pacman.monitoring.orchestrator.get_token_limit",
             side_effect=Exception("Calculation failed"),
         ):
             result = orchestrator._calculate_token_limit(data)
@@ -562,7 +562,7 @@ class TestMonitoringOrchestratorIntegration:
         orchestrator.set_args(args)
 
         with patch(
-            "claude_monitor.monitoring.orchestrator.get_token_limit",
+            "pacman.monitoring.orchestrator.get_token_limit",
             return_value=200000,
         ):
             # Start monitoring
@@ -642,7 +642,7 @@ class TestMonitoringOrchestratorIntegration:
         orchestrator.register_update_callback(lambda data: captured_data.append(data))
 
         with patch(
-            "claude_monitor.monitoring.orchestrator.get_token_limit",
+            "pacman.monitoring.orchestrator.get_token_limit",
             return_value=200000,
         ):
             # Process initial data
@@ -684,7 +684,7 @@ class TestMonitoringOrchestratorIntegration:
         orchestrator.data_manager.get_data.side_effect = mock_get_data
 
         with patch(
-            "claude_monitor.monitoring.orchestrator.report_error"
+            "pacman.monitoring.orchestrator.report_error"
         ) as mock_report:
             # First call should fail
             result1 = orchestrator._fetch_and_process_data()
@@ -693,7 +693,7 @@ class TestMonitoringOrchestratorIntegration:
 
             # Second call should succeed
             with patch(
-                "claude_monitor.monitoring.orchestrator.get_token_limit",
+                "pacman.monitoring.orchestrator.get_token_limit",
                 return_value=200000,
             ):
                 result2 = orchestrator._fetch_and_process_data()
@@ -770,7 +770,7 @@ class TestMonitoringOrchestratorProperties:
         orchestrator.data_manager.get_data.return_value = test_data
 
         with patch(
-            "claude_monitor.monitoring.orchestrator.get_token_limit",
+            "pacman.monitoring.orchestrator.get_token_limit",
             return_value=200000,
         ):
             result = orchestrator._fetch_and_process_data()
@@ -802,7 +802,7 @@ class TestSessionMonitor:
 
     def test_session_monitor_init(self) -> None:
         """Test SessionMonitor initialization."""
-        from claude_monitor.monitoring.session_monitor import SessionMonitor
+        from pacman.monitoring.session_monitor import SessionMonitor
 
         monitor = SessionMonitor()
 
@@ -812,7 +812,7 @@ class TestSessionMonitor:
 
     def test_session_monitor_update_valid_data(self) -> None:
         """Test updating session monitor with valid data."""
-        from claude_monitor.monitoring.session_monitor import SessionMonitor
+        from pacman.monitoring.session_monitor import SessionMonitor
 
         monitor = SessionMonitor()
 
@@ -835,7 +835,7 @@ class TestSessionMonitor:
 
     def test_session_monitor_update_invalid_data(self) -> None:
         """Test updating session monitor with invalid data."""
-        from claude_monitor.monitoring.session_monitor import SessionMonitor
+        from pacman.monitoring.session_monitor import SessionMonitor
 
         monitor = SessionMonitor()
 
@@ -846,7 +846,7 @@ class TestSessionMonitor:
 
     def test_session_monitor_validation_empty_data(self) -> None:
         """Test data validation with empty data."""
-        from claude_monitor.monitoring.session_monitor import SessionMonitor
+        from pacman.monitoring.session_monitor import SessionMonitor
 
         monitor = SessionMonitor()
 
@@ -857,7 +857,7 @@ class TestSessionMonitor:
 
     def test_session_monitor_validation_missing_blocks(self) -> None:
         """Test data validation with missing blocks."""
-        from claude_monitor.monitoring.session_monitor import SessionMonitor
+        from pacman.monitoring.session_monitor import SessionMonitor
 
         monitor = SessionMonitor()
 
@@ -869,7 +869,7 @@ class TestSessionMonitor:
 
     def test_session_monitor_validation_invalid_blocks(self) -> None:
         """Test data validation with invalid blocks."""
-        from claude_monitor.monitoring.session_monitor import SessionMonitor
+        from pacman.monitoring.session_monitor import SessionMonitor
 
         monitor = SessionMonitor()
 
@@ -881,7 +881,7 @@ class TestSessionMonitor:
 
     def test_session_monitor_register_callback(self) -> None:
         """Test registering session callbacks."""
-        from claude_monitor.monitoring.session_monitor import SessionMonitor
+        from pacman.monitoring.session_monitor import SessionMonitor
 
         monitor = SessionMonitor()
         callback = Mock()
@@ -892,7 +892,7 @@ class TestSessionMonitor:
 
     def test_session_monitor_callback_execution(self) -> None:
         """Test that callbacks are executed on session change."""
-        from claude_monitor.monitoring.session_monitor import SessionMonitor
+        from pacman.monitoring.session_monitor import SessionMonitor
 
         monitor = SessionMonitor()
         callback = Mock()
@@ -919,7 +919,7 @@ class TestSessionMonitor:
 
     def test_session_monitor_session_history(self) -> None:
         """Test session history tracking."""
-        from claude_monitor.monitoring.session_monitor import SessionMonitor
+        from pacman.monitoring.session_monitor import SessionMonitor
 
         monitor = SessionMonitor()
 
@@ -942,7 +942,7 @@ class TestSessionMonitor:
 
     def test_session_monitor_current_session_tracking(self) -> None:
         """Test current session ID tracking."""
-        from claude_monitor.monitoring.session_monitor import SessionMonitor
+        from pacman.monitoring.session_monitor import SessionMonitor
 
         monitor = SessionMonitor()
 
@@ -965,7 +965,7 @@ class TestSessionMonitor:
 
     def test_session_monitor_multiple_blocks(self) -> None:
         """Test session monitor with multiple blocks."""
-        from claude_monitor.monitoring.session_monitor import SessionMonitor
+        from pacman.monitoring.session_monitor import SessionMonitor
 
         monitor = SessionMonitor()
 
@@ -995,7 +995,7 @@ class TestSessionMonitor:
 
     def test_session_monitor_no_active_session(self) -> None:
         """Test session monitor with no active sessions."""
-        from claude_monitor.monitoring.session_monitor import SessionMonitor
+        from pacman.monitoring.session_monitor import SessionMonitor
 
         monitor = SessionMonitor()
 

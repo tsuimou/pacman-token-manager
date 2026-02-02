@@ -52,7 +52,7 @@ def _calculate_p90_from_blocks(blocks: Sequence[Dict[str, Any]], cfg: P90Config)
 class P90Calculator:
     def __init__(self, config: Optional[P90Config] = None) -> None:
         if config is None:
-            from claude_monitor.core.plans import (
+            from pacman.core.plans import (
                 COMMON_TOKEN_LIMITS,
                 DEFAULT_TOKEN_LIMIT,
                 LIMIT_DETECTION_THRESHOLD,

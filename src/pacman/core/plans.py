@@ -133,7 +133,7 @@ class Plans:
             return cls.DEFAULT_TOKEN_LIMIT
 
         if cfg.name == PlanType.CUSTOM.value and blocks:
-            from claude_monitor.core.p90_calculator import P90Calculator
+            from pacman.core.p90_calculator import P90Calculator
 
             p90_limit = P90Calculator().calculate_p90_limit(blocks)
             if p90_limit:

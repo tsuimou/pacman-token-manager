@@ -14,7 +14,7 @@ from rich.table import Table
 from rich.text import Text
 
 # Removed theme import - using direct styles
-from claude_monitor.utils.formatting import format_currency, format_number
+from pacman.utils.formatting import format_currency, format_number
 
 logger = logging.getLogger(__name__)
 

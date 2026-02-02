@@ -22,7 +22,7 @@ def normalize_model_name(model: str) -> str:
     Returns:
         Normalized model name
     """
-    from claude_monitor.core.models import normalize_model_name as _normalize_model_name
+    from pacman.core.models import normalize_model_name as _normalize_model_name
 
     return _normalize_model_name(model)
 

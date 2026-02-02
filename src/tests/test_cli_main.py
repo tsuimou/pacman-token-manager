@@ -3,7 +3,7 @@
 from pathlib import Path
 from unittest.mock import Mock, patch
 
-from claude_monitor.cli.main import main
+from pacman.cli.main import main
 
 
 class TestMain:
@@ -25,7 +25,7 @@ class TestMain:
             mock_print.assert_called_once()
             assert "claude-monitor" in mock_print.call_args[0][0]
 
-    @patch("claude_monitor.core.settings.Settings.load_with_last_used")
+    @patch("pacman.core.settings.Settings.load_with_last_used")
     def test_keyboard_interrupt_handling(self, mock_load: Mock) -> None:
         """Test keyboard interrupt returns 0."""
         mock_load.side_effect = KeyboardInterrupt()
@@ -34,7 +34,7 @@ class TestMain:
             assert result == 0
             mock_print.assert_called_once_with("\n\nMonitoring stopped by user.")
 
-    @patch("claude_monitor.core.settings.Settings.load_with_last_used")
+    @patch("pacman.core.settings.Settings.load_with_last_used")
     def test_exception_handling(self, mock_load_settings: Mock) -> None:
         """Test exception handling returns 1."""
         mock_load_settings.side_effect = Exception("Test error")
@@ -43,7 +43,7 @@ class TestMain:
             result = main(["--plan", "pro"])
             assert result == 1
 
-    @patch("claude_monitor.core.settings.Settings.load_with_last_used")
+    @patch("pacman.core.settings.Settings.load_with_last_used")
     def test_successful_main_execution(self, mock_load_settings: Mock) -> None:
         """Test successful main execution by mocking core components."""
         mock_args = Mock()
@@ -64,7 +64,7 @@ class TestMain:
         # Get the actual module to avoid Python version compatibility issues with mock.patch
         import sys
 
-        actual_module = sys.modules["claude_monitor.cli.main"]
+        actual_module = sys.modules["pacman.cli.main"]
 
         # Manually replace the function - this works across all Python versions
         original_discover = actual_module.discover_claude_data_paths
@@ -74,11 +74,11 @@ class TestMain:
 
         try:
             with (
-                patch("claude_monitor.terminal.manager.setup_terminal"),
-                patch("claude_monitor.terminal.themes.get_themed_console"),
-                patch("claude_monitor.ui.display_controller.DisplayController"),
+                patch("pacman.terminal.manager.setup_terminal"),
+                patch("pacman.terminal.themes.get_themed_console"),
+                patch("pacman.ui.display_controller.DisplayController"),
                 patch(
-                    "claude_monitor.monitoring.orchestrator.MonitoringOrchestrator"
+                    "pacman.monitoring.orchestrator.MonitoringOrchestrator"
                 ) as mock_orchestrator,
                 patch("signal.pause", side_effect=KeyboardInterrupt()),
                 patch("time.sleep", side_effect=KeyboardInterrupt()),
@@ -101,7 +101,7 @@ class TestFunctions:
 
     def test_get_standard_claude_paths(self) -> None:
         """Test getting standard Claude paths."""
-        from claude_monitor.cli.main import get_standard_claude_paths
+        from pacman.cli.main import get_standard_claude_paths
 
         paths = get_standard_claude_paths()
         assert isinstance(paths, list)
@@ -110,7 +110,7 @@ class TestFunctions:
 
     def test_discover_claude_data_paths_no_paths(self) -> None:
         """Test discover with no existing paths."""
-        from claude_monitor.cli.main import discover_claude_data_paths
+        from pacman.cli.main import discover_claude_data_paths
 
         with patch("pathlib.Path.exists", return_value=False):
             paths = discover_claude_data_paths()
@@ -118,7 +118,7 @@ class TestFunctions:
 
     def test_discover_claude_data_paths_with_custom(self) -> None:
         """Test discover with custom paths."""
-        from claude_monitor.cli.main import discover_claude_data_paths
+        from pacman.cli.main import discover_claude_data_paths
 
         custom_paths = ["/custom/path"]
         with (

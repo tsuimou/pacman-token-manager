@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Module execution entry point for Claude Monitor.
 
-Allows running the package as a module: python -m claude_monitor
+Allows running the package as a module: python -m pacman
 """
 
 import sys

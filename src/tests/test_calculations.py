@@ -6,13 +6,13 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from claude_monitor.core.calculations import (
+from pacman.core.calculations import (
     BurnRateCalculator,
     _calculate_total_tokens_in_hour,
     _process_block_for_burn_rate,
     calculate_hourly_burn_rate,
 )
-from claude_monitor.core.models import BurnRate, TokenCounts, UsageProjection
+from pacman.core.models import BurnRate, TokenCounts, UsageProjection
 
 
 class TestBurnRateCalculator:
@@ -100,7 +100,7 @@ class TestBurnRateCalculator:
         assert burn_rate is not None
         assert burn_rate.tokens_per_minute == 165.0
 
-    @patch("claude_monitor.core.calculations.datetime")
+    @patch("pacman.core.calculations.datetime")
     def test_project_block_usage_success(
         self,
         mock_datetime: Mock,
@@ -125,7 +125,7 @@ class TestBurnRateCalculator:
 
         assert projection.remaining_minutes == 60
 
-    @patch("claude_monitor.core.calculations.datetime")
+    @patch("pacman.core.calculations.datetime")
     def test_project_block_usage_no_remaining_time(
         self,
         mock_datetime: Mock,
@@ -198,7 +198,7 @@ class TestHourlyBurnRateCalculation:
         burn_rate = calculate_hourly_burn_rate(None, current_time)
         assert burn_rate == 0.0
 
-    @patch("claude_monitor.core.calculations._calculate_total_tokens_in_hour")
+    @patch("pacman.core.calculations._calculate_total_tokens_in_hour")
     def test_calculate_hourly_burn_rate_success(
         self, mock_calc_tokens: Mock, current_time: datetime
     ) -> None:
@@ -213,7 +213,7 @@ class TestHourlyBurnRateCalculation:
         one_hour_ago = current_time - timedelta(hours=1)
         mock_calc_tokens.assert_called_once_with(blocks, one_hour_ago, current_time)
 
-    @patch("claude_monitor.core.calculations._calculate_total_tokens_in_hour")
+    @patch("pacman.core.calculations._calculate_total_tokens_in_hour")
     def test_calculate_hourly_burn_rate_zero_tokens(
         self, mock_calc_tokens: Mock, current_time: datetime
     ) -> None:
@@ -225,7 +225,7 @@ class TestHourlyBurnRateCalculation:
 
         assert burn_rate == 0.0
 
-    @patch("claude_monitor.core.calculations._process_block_for_burn_rate")
+    @patch("pacman.core.calculations._process_block_for_burn_rate")
     def test_calculate_total_tokens_in_hour(
         self, mock_process_block: Mock, current_time: datetime
     ) -> None:
@@ -253,7 +253,7 @@ class TestHourlyBurnRateCalculation:
         tokens = _process_block_for_burn_rate(gap_block, one_hour_ago, current_time)
         assert tokens == 0
 
-    @patch("claude_monitor.core.calculations._parse_block_start_time")
+    @patch("pacman.core.calculations._parse_block_start_time")
     def test_process_block_for_burn_rate_invalid_start_time(
         self, mock_parse_time: Mock, current_time: datetime
     ) -> None:
@@ -266,8 +266,8 @@ class TestHourlyBurnRateCalculation:
         tokens = _process_block_for_burn_rate(block, one_hour_ago, current_time)
         assert tokens == 0
 
-    @patch("claude_monitor.core.calculations._determine_session_end_time")
-    @patch("claude_monitor.core.calculations._parse_block_start_time")
+    @patch("pacman.core.calculations._determine_session_end_time")
+    @patch("pacman.core.calculations._parse_block_start_time")
     def test_process_block_for_burn_rate_old_session(
         self, mock_parse_time: Mock, mock_end_time: Mock, current_time: datetime
     ) -> None:
@@ -344,7 +344,7 @@ class TestP90Calculator:
 
     def test_p90_config_creation(self) -> None:
         """Test P90Config dataclass creation."""
-        from claude_monitor.core.p90_calculator import P90Config
+        from pacman.core.p90_calculator import P90Config
 
         config = P90Config(
             common_limits=[10000, 50000, 100000],
@@ -360,7 +360,7 @@ class TestP90Calculator:
 
     def test_did_hit_limit_true(self) -> None:
         """Test _did_hit_limit returns True when limit is hit."""
-        from claude_monitor.core.p90_calculator import _did_hit_limit
+        from pacman.core.p90_calculator import _did_hit_limit
 
         # 9000 tokens with 10000 limit and 0.9 threshold = 9000 >= 9000
         result = _did_hit_limit(9000, [10000, 50000], 0.9)
@@ -372,7 +372,7 @@ class TestP90Calculator:
 
     def test_did_hit_limit_false(self) -> None:
         """Test _did_hit_limit returns False when limit is not hit."""
-        from claude_monitor.core.p90_calculator import _did_hit_limit
+        from pacman.core.p90_calculator import _did_hit_limit
 
         # 8000 tokens with 10000 limit and 0.9 threshold = 8000 < 9000
         result = _did_hit_limit(8000, [10000, 50000], 0.9)
@@ -384,7 +384,7 @@ class TestP90Calculator:
 
     def test_extract_sessions_basic(self) -> None:
         """Test _extract_sessions with basic filtering."""
-        from claude_monitor.core.p90_calculator import _extract_sessions
+        from pacman.core.p90_calculator import _extract_sessions
 
         blocks = [
             {"totalTokens": 1000, "isGap": False},
@@ -404,7 +404,7 @@ class TestP90Calculator:
 
     def test_extract_sessions_complex_filter(self) -> None:
         """Test _extract_sessions with complex filtering."""
-        from claude_monitor.core.p90_calculator import _extract_sessions
+        from pacman.core.p90_calculator import _extract_sessions
 
         blocks = [
             {"totalTokens": 1000, "isGap": False, "isActive": False},
@@ -422,7 +422,7 @@ class TestP90Calculator:
 
     def test_calculate_p90_from_blocks_with_hits(self) -> None:
         """Test _calculate_p90_from_blocks when limit hits are found."""
-        from claude_monitor.core.p90_calculator import (
+        from pacman.core.p90_calculator import (
             P90Config,
             _calculate_p90_from_blocks,
         )
@@ -449,7 +449,7 @@ class TestP90Calculator:
 
     def test_calculate_p90_from_blocks_no_hits(self) -> None:
         """Test _calculate_p90_from_blocks when no limit hits are found."""
-        from claude_monitor.core.p90_calculator import (
+        from pacman.core.p90_calculator import (
             P90Config,
             _calculate_p90_from_blocks,
         )
@@ -476,7 +476,7 @@ class TestP90Calculator:
 
     def test_calculate_p90_from_blocks_empty(self) -> None:
         """Test _calculate_p90_from_blocks with empty or invalid blocks."""
-        from claude_monitor.core.p90_calculator import (
+        from pacman.core.p90_calculator import (
             P90Config,
             _calculate_p90_from_blocks,
         )
@@ -501,7 +501,7 @@ class TestP90Calculator:
 
     def test_p90_calculator_init(self) -> None:
         """Test P90Calculator initialization."""
-        from claude_monitor.core.p90_calculator import P90Calculator
+        from pacman.core.p90_calculator import P90Calculator
 
         calculator = P90Calculator()
 
@@ -512,7 +512,7 @@ class TestP90Calculator:
 
     def test_p90_calculator_custom_config(self) -> None:
         """Test P90Calculator with custom configuration."""
-        from claude_monitor.core.p90_calculator import P90Calculator, P90Config
+        from pacman.core.p90_calculator import P90Calculator, P90Config
 
         custom_config = P90Config(
             common_limits=[5000, 25000],
@@ -529,7 +529,7 @@ class TestP90Calculator:
 
     def test_p90_calculator_calculate_basic(self) -> None:
         """Test P90Calculator.calculate with basic blocks."""
-        from claude_monitor.core.p90_calculator import P90Calculator
+        from pacman.core.p90_calculator import P90Calculator
 
         calculator = P90Calculator()
 
@@ -546,7 +546,7 @@ class TestP90Calculator:
 
     def test_p90_calculator_calculate_empty(self) -> None:
         """Test P90Calculator.calculate with empty blocks."""
-        from claude_monitor.core.p90_calculator import P90Calculator
+        from pacman.core.p90_calculator import P90Calculator
 
         calculator = P90Calculator()
 
@@ -556,7 +556,7 @@ class TestP90Calculator:
 
     def test_p90_calculator_caching(self) -> None:
         """Test P90Calculator caching behavior."""
-        from claude_monitor.core.p90_calculator import P90Calculator
+        from pacman.core.p90_calculator import P90Calculator
 
         calculator = P90Calculator()
 
@@ -575,7 +575,7 @@ class TestP90Calculator:
 
     def test_p90_calculation_edge_cases(self) -> None:
         """Test P90 calculation with edge cases."""
-        from claude_monitor.core.p90_calculator import (
+        from pacman.core.p90_calculator import (
             P90Config,
             _calculate_p90_from_blocks,
         )
@@ -603,7 +603,7 @@ class TestP90Calculator:
 
     def test_p90_quantiles_calculation(self) -> None:
         """Test that P90 uses proper quantiles calculation."""
-        from claude_monitor.core.p90_calculator import (
+        from pacman.core.p90_calculator import (
             P90Config,
             _calculate_p90_from_blocks,
         )

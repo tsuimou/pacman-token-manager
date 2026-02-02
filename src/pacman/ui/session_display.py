@@ -10,14 +10,16 @@ from typing import Any, Optional, List
 
 import pytz
 
-from claude_monitor.ui.components import CostIndicator, VelocityIndicator
-from claude_monitor.ui.layouts import HeaderManager
-from claude_monitor.ui.progress_bars import (
+from pacman.ui.components import CostIndicator, VelocityIndicator
+from pacman.ui.guidance import get_primary_guidance
+from pacman.terminal.input_handler import get_action_state
+from pacman.ui.layouts import HeaderManager
+from pacman.ui.progress_bars import (
     ModelUsageBar,
     TimeProgressBar,
     TokenProgressBar,
 )
-from claude_monitor.utils.time_utils import (
+from pacman.utils.time_utils import (
     format_display_time,
     get_time_format_preference,
     percentage,
@@ -108,7 +110,7 @@ class SessionDisplayComponent:
         Returns:
             Formatted progress bar string
         """
-        from claude_monitor.terminal.themes import get_cost_style
+        from pacman.terminal.themes import get_cost_style
 
         if percentage < 50:
             color = "🟢"
@@ -223,78 +225,57 @@ class SessionDisplayComponent:
 
         return lines
 
-    def _generate_guidance_suggestions(
-        self,
-        usage_percentage: float,
-        burn_rate: float,
-        top_contributors: Optional[list[dict[str, Any]]],
-    ) -> list[str]:
-        """Generate actionable guidance based on current metrics.
-
-        Args:
-            usage_percentage: Current token usage as percentage of limit
-            burn_rate: Current burn rate in tokens/min
-            top_contributors: List of top token contributors
-
-        Returns:
-            List of suggestion strings (max 3)
-        """
-        suggestions: list[str] = []
-
-        # Rule 1: High usage percentage
-        if usage_percentage >= 80:
-            suggestions.append("Approaching limit — prioritize critical tasks")
-
-        # Rule 2: High burn rate
-        if burn_rate > 100:
-            suggestions.append("High burn rate — consider shorter prompts")
-
-        # Rule 3: Check output vs input ratio from top contributors
-        if top_contributors:
-            total_input = sum(c.get("input_tokens", 0) for c in top_contributors)
-            total_output = sum(c.get("output_tokens", 0) for c in top_contributors)
-            if total_input > 0 and total_output > total_input * 2:
-                suggestions.append("Large outputs — request concise responses")
-
-            # Rule 4: Heavy Opus usage (expensive model)
-            for contrib in top_contributors:
-                name_lower = contrib.get("name", "").lower()
-                pct = contrib.get("percentage", 0)
-                if "opus" in name_lower and pct > 50:
-                    suggestions.append("Heavy Opus usage — use Sonnet for simpler tasks")
-                    break
-
-        return suggestions[:3]  # Max 3 suggestions
-
     def _render_guidance_section(
         self,
         usage_percentage: float,
         burn_rate: float,
         top_contributors: Optional[list[dict[str, Any]]],
+        minutes_to_reset: float = 0.0,
+        current_model: str = "opus",
     ) -> list[str]:
-        """Render the 'What should I do?' guidance section.
+        """Render the guidance section with a single recommendation.
 
         Args:
             usage_percentage: Current token usage percentage
             burn_rate: Current burn rate
             top_contributors: Top token contributors data
+            minutes_to_reset: Minutes until token reset
+            current_model: Currently active model name
 
         Returns:
             List of formatted lines for the guidance section
         """
-        lines: list[str] = []
-        suggestions = self._generate_guidance_suggestions(
-            usage_percentage, burn_rate, top_contributors
+        # Extract model distribution from top contributors
+        model_distribution: dict[str, float] = {}
+        if top_contributors:
+            for contrib in top_contributors:
+                name_lower = contrib.get("name", "").lower()
+                pct = contrib.get("percentage", 0)
+                if "opus" in name_lower:
+                    model_distribution["opus"] = model_distribution.get("opus", 0) + pct
+                elif "sonnet" in name_lower:
+                    model_distribution["sonnet"] = model_distribution.get("sonnet", 0) + pct
+                elif "haiku" in name_lower:
+                    model_distribution["haiku"] = model_distribution.get("haiku", 0) + pct
+
+        guidance = get_primary_guidance(
+            usage_percentage=usage_percentage,
+            burn_rate=burn_rate,
+            model_distribution=model_distribution,
+            minutes_to_reset=minutes_to_reset,
+            current_model=current_model,
         )
 
+        lines: list[str] = []
         lines.append("")
-        lines.append("[bold]💡 What should I do?[/bold]")
+        lines.append(f"[bold]💡 {guidance.primary}[/bold]")
 
-        if suggestions:
-            for suggestion in suggestions:
-                lines.append(f"   • [info]{suggestion}[/]")
-        else:
-            lines.append("   [dim]No action needed[/dim]")
+        if guidance.context:
+            lines.append(f"   [dim]{guidance.context}[/dim]")
+
+        # Add action prompt if available
+        if guidance.action_prompt and guidance.interactive:
+            lines.append(f"   [info]→ {guidance.action_prompt}[/]  [success][Y][/]es  [dim][N][/]o thanks")
 
         return lines
 
@@ -371,7 +352,7 @@ class SessionDisplayComponent:
         screen_buffer.append(f"{health_emoji} [value]Context health:[/] [{health_style}]{health_status}[/]")
 
         if plan in ["custom", "pro", "max5", "max20"]:
-            from claude_monitor.core.plans import DEFAULT_COST_LIMIT
+            from pacman.core.plans import DEFAULT_COST_LIMIT
 
             cost_limit_p90 = kwargs.get("cost_limit_p90", DEFAULT_COST_LIMIT)
             messages_limit_p90 = kwargs.get("messages_limit_p90", 1500)
@@ -496,8 +477,25 @@ class SessionDisplayComponent:
             screen_buffer.extend(self._render_top_contributors_section(top_contributors))
 
         # Add guidance section
+        minutes_to_reset = max(0, total_session_minutes - elapsed_session_minutes)
+        # Determine current model from per_model_stats
+        current_model = "opus"  # default
+        if per_model_stats:
+            # Find the model with highest usage
+            max_usage = 0
+            for model_name, stats in per_model_stats.items():
+                usage = stats.get("percentage", 0) if isinstance(stats, dict) else 0
+                if usage > max_usage:
+                    max_usage = usage
+                    current_model = model_name
         screen_buffer.extend(
-            self._render_guidance_section(usage_percentage, burn_rate, top_contributors)
+            self._render_guidance_section(
+                usage_percentage,
+                burn_rate,
+                top_contributors,
+                minutes_to_reset=minutes_to_reset,
+                current_model=current_model,
+            )
         )
 
         # Add auto actions status

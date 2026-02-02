@@ -11,15 +11,15 @@ from datetime import timezone as tz
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
-from claude_monitor.core.data_processors import (
+from pacman.core.data_processors import (
     DataConverter,
     TimestampProcessor,
     TokenExtractor,
 )
-from claude_monitor.core.models import CostMode, UsageEntry
-from claude_monitor.core.pricing import PricingCalculator
-from claude_monitor.error_handling import report_file_error
-from claude_monitor.utils.time_utils import TimezoneHandler
+from pacman.core.models import CostMode, UsageEntry
+from pacman.core.pricing import PricingCalculator
+from pacman.error_handling import report_file_error
+from pacman.utils.time_utils import TimezoneHandler
 
 FIELD_COST_USD = "cost_usd"
 FIELD_MODEL = "model"

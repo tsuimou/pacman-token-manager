@@ -8,13 +8,13 @@ import re
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional, Tuple, Union
 
-from claude_monitor.core.models import (
+from pacman.core.models import (
     SessionBlock,
     TokenCounts,
     UsageEntry,
     normalize_model_name,
 )
-from claude_monitor.utils.time_utils import TimezoneHandler
+from pacman.utils.time_utils import TimezoneHandler
 
 logger = logging.getLogger(__name__)
 
@@ -372,7 +372,7 @@ class SessionAnalyzer:
 
     def _parse_reset_timestamp(self, text: str) -> Optional[datetime]:
         """Parse reset timestamp from limit message using centralized processor."""
-        from claude_monitor.core.data_processors import TimestampProcessor
+        from pacman.core.data_processors import TimestampProcessor
 
         match = re.search(r"limit reached\|(\d+)", text)
         if match:

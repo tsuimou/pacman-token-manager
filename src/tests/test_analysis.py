@@ -3,7 +3,7 @@
 from datetime import datetime, timezone
 from unittest.mock import Mock, patch
 
-from claude_monitor.core.models import (
+from pacman.core.models import (
     BurnRate,
     CostMode,
     SessionBlock,
@@ -11,7 +11,7 @@ from claude_monitor.core.models import (
     UsageEntry,
     UsageProjection,
 )
-from claude_monitor.data.analysis import (
+from pacman.data.analysis import (
     _add_optional_block_data,
     _convert_blocks_to_dict_format,
     _create_base_block_dict,
@@ -27,9 +27,9 @@ from claude_monitor.data.analysis import (
 class TestAnalyzeUsage:
     """Test the main analyze_usage function."""
 
-    @patch("claude_monitor.data.analysis.load_usage_entries")
-    @patch("claude_monitor.data.analysis.SessionAnalyzer")
-    @patch("claude_monitor.data.analysis.BurnRateCalculator")
+    @patch("pacman.data.analysis.load_usage_entries")
+    @patch("pacman.data.analysis.SessionAnalyzer")
+    @patch("pacman.data.analysis.BurnRateCalculator")
     def test_analyze_usage_basic(
         self, mock_calc_class: Mock, mock_analyzer_class: Mock, mock_load: Mock
     ) -> None:
@@ -74,9 +74,9 @@ class TestAnalyzeUsage:
         mock_analyzer.transform_to_blocks.assert_called_once_with([sample_entry])
         mock_analyzer.detect_limits.assert_called_once_with([{"raw": "data"}])
 
-    @patch("claude_monitor.data.analysis.load_usage_entries")
-    @patch("claude_monitor.data.analysis.SessionAnalyzer")
-    @patch("claude_monitor.data.analysis.BurnRateCalculator")
+    @patch("pacman.data.analysis.load_usage_entries")
+    @patch("pacman.data.analysis.SessionAnalyzer")
+    @patch("pacman.data.analysis.BurnRateCalculator")
     def test_analyze_usage_quick_start_no_hours(
         self, mock_calc_class: Mock, mock_analyzer_class: Mock, mock_load: Mock
     ) -> None:
@@ -96,9 +96,9 @@ class TestAnalyzeUsage:
         assert result["metadata"]["quick_start"] is True
         assert result["metadata"]["hours_analyzed"] == 24
 
-    @patch("claude_monitor.data.analysis.load_usage_entries")
-    @patch("claude_monitor.data.analysis.SessionAnalyzer")
-    @patch("claude_monitor.data.analysis.BurnRateCalculator")
+    @patch("pacman.data.analysis.load_usage_entries")
+    @patch("pacman.data.analysis.SessionAnalyzer")
+    @patch("pacman.data.analysis.BurnRateCalculator")
     def test_analyze_usage_quick_start_with_hours(
         self, mock_calc_class: Mock, mock_analyzer_class: Mock, mock_load: Mock
     ) -> None:
@@ -118,9 +118,9 @@ class TestAnalyzeUsage:
         assert result["metadata"]["quick_start"] is True
         assert result["metadata"]["hours_analyzed"] == 48
 
-    @patch("claude_monitor.data.analysis.load_usage_entries")
-    @patch("claude_monitor.data.analysis.SessionAnalyzer")
-    @patch("claude_monitor.data.analysis.BurnRateCalculator")
+    @patch("pacman.data.analysis.load_usage_entries")
+    @patch("pacman.data.analysis.SessionAnalyzer")
+    @patch("pacman.data.analysis.BurnRateCalculator")
     def test_analyze_usage_with_limits(
         self, mock_calc_class: Mock, mock_analyzer_class: Mock, mock_load: Mock
     ) -> None:
@@ -163,9 +163,9 @@ class TestAnalyzeUsage:
         assert result["metadata"]["limits_detected"] == 1
         assert hasattr(sample_block, "limit_messages")
 
-    @patch("claude_monitor.data.analysis.load_usage_entries")
-    @patch("claude_monitor.data.analysis.SessionAnalyzer")
-    @patch("claude_monitor.data.analysis.BurnRateCalculator")
+    @patch("pacman.data.analysis.load_usage_entries")
+    @patch("pacman.data.analysis.SessionAnalyzer")
+    @patch("pacman.data.analysis.BurnRateCalculator")
     def test_analyze_usage_no_raw_entries(
         self, mock_calc_class: Mock, mock_analyzer_class: Mock, mock_load: Mock
     ) -> None:
@@ -287,7 +287,7 @@ class TestProcessBurnRates:
 class TestCreateResult:
     """Test the _create_result function."""
 
-    @patch("claude_monitor.data.analysis._convert_blocks_to_dict_format")
+    @patch("pacman.data.analysis._convert_blocks_to_dict_format")
     def test_create_result_basic(self, mock_convert: Mock) -> None:
         """Test basic _create_result functionality."""
         # Create test blocks
@@ -555,8 +555,8 @@ class TestBlockConversion:
         assert "projection" not in block_dict
         assert "limitMessages" not in block_dict
 
-    @patch("claude_monitor.data.analysis._create_base_block_dict")
-    @patch("claude_monitor.data.analysis._add_optional_block_data")
+    @patch("pacman.data.analysis._create_base_block_dict")
+    @patch("pacman.data.analysis._add_optional_block_data")
     def test_convert_blocks_to_dict_format(
         self, mock_add_optional: Mock, mock_create_base: Mock
     ) -> None:

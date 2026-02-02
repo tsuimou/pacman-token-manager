@@ -6,8 +6,8 @@ import logging
 import sys
 from typing import Any, List, Optional, Union
 
-from claude_monitor.error_handling import report_error
-from claude_monitor.terminal.themes import print_themed
+from pacman.error_handling import report_error
+from pacman.terminal.themes import print_themed
 
 logger: logging.Logger = logging.getLogger(__name__)
 

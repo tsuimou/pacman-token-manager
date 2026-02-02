@@ -6,6 +6,9 @@ from typing import Any, Dict, List, Optional, Tuple
 from rich.console import Console
 from rich.text import Text
 
+from pacman.ui.guidance import get_primary_guidance, Guidance
+from pacman.terminal.input_handler import get_action_state
+
 
 class SimpleDisplayComponent:
     """Clean, human-first status card display."""
@@ -91,22 +94,6 @@ class SimpleDisplayComponent:
                 return "-".join(meaningful[-3:])[:20]
         return project_path[:20]
 
-    def _get_actions(self, state: str, model_distribution: Dict[str, float]) -> List[str]:
-        """Get list of actionable options."""
-        actions = []
-
-        opus_pct = model_distribution.get("opus", 0)
-        if opus_pct > 50:
-            actions.append("Switch to a lighter model")
-        else:
-            actions.append("Use Sonnet instead of Opus")
-
-        actions.append("Run /compact to reduce context")
-        actions.append("Clean up long conversations")
-        actions.append("Do nothing for now")
-
-        return actions[:4]
-
     def _get_alert(
         self,
         usage_pct: float,
@@ -138,6 +125,36 @@ class SimpleDisplayComponent:
         """Return an empty line with borders."""
         return f"\033[33m{self.VERTICAL}\033[0m{' ' * (self.width - 2)}\033[33m{self.VERTICAL}\033[0m"
 
+    def _wrap_text(self, text: str, max_width: int) -> List[str]:
+        """Word-wrap text to fit within max_width.
+
+        Args:
+            text: Text to wrap
+            max_width: Maximum line width
+
+        Returns:
+            List of wrapped lines
+        """
+        words = text.split()
+        lines = []
+        current_line = []
+        current_length = 0
+
+        for word in words:
+            if current_length + len(word) + (1 if current_line else 0) <= max_width:
+                current_line.append(word)
+                current_length += len(word) + (1 if len(current_line) > 1 else 0)
+            else:
+                if current_line:
+                    lines.append(" ".join(current_line))
+                current_line = [word]
+                current_length = len(word)
+
+        if current_line:
+            lines.append(" ".join(current_line))
+
+        return lines if lines else [""]
+
     def render(
         self,
         tokens_used: int,
@@ -146,6 +163,8 @@ class SimpleDisplayComponent:
         model_distribution: Dict[str, float],
         project_distribution: Optional[Dict[str, int]] = None,
         usage_over_time: Optional[Dict[str, int]] = None,
+        burn_rate: float = 0.0,
+        current_model: str = "opus",
     ) -> Text:
         """Render the simplified status card.
 
@@ -155,7 +174,9 @@ class SimpleDisplayComponent:
             minutes_to_reset: Minutes until reset
             model_distribution: Dict of model name -> percentage
             project_distribution: Dict of project name -> tokens
-            usage_over_time: Dict with 'recent', 'today', 'month' token counts
+            usage_over_time: Dict with 'window_5hr' and 'weekly' token counts
+            burn_rate: Current token burn rate (tokens/min)
+            current_model: Currently active model name
 
         Returns:
             Rich Text renderable
@@ -182,27 +203,20 @@ class SimpleDisplayComponent:
         # === TOKEN STATUS ===
         lines.append(self._empty_line())
 
-        # Token bar
+        # Token bar with percentage
         bar = self._render_bar(usage_pct, width=20)
-        tkn_line = f"TKN \033[{state_color}m{bar}\033[0m \033[36m{tokens_used:,}\033[0m / {token_limit:,}"
-        tkn_line_stripped = f"TKN {bar} {tokens_used:,} / {token_limit:,}"
+        pct_str = f"{usage_pct:.0f}%"
+        tkn_line = f"TKN \033[{state_color}m{bar}\033[0m \033[{state_color}m{pct_str:>4}\033[0m  \033[36m{tokens_used:,}\033[0m / {token_limit:,}"
+        tkn_line_stripped = f"TKN {bar} {pct_str:>4}  {tokens_used:,} / {token_limit:,}"
         lines.append(f"\033[33m{self.VERTICAL}\033[0m  {tkn_line}{' ' * (self.width - len(tkn_line_stripped) - 4)}\033[33m{self.VERTICAL}\033[0m")
 
-        # Tokens left
+        # Tokens left + reset time
         tokens_left = max(0, token_limit - tokens_used)
         left_str = self._format_tokens(tokens_left)
-        left_line = f"\033[32m{left_str} left\033[0m before you have to wait"
-        left_stripped = f"{left_str} left before you have to wait"
-        lines.append(f"\033[33m{self.VERTICAL}\033[0m  {left_line}{' ' * (self.width - len(left_stripped) - 4)}\033[33m{self.VERTICAL}\033[0m")
-
-        lines.append(self._empty_line())
-
-        # Reset time
         time_str = self._format_time(minutes_to_reset)
-        window_start = self._get_window_start_time(minutes_to_reset)
-        reset_line = f"Resets in \033[36m{time_str}\033[0m \033[90m(started {window_start})\033[0m"
-        reset_stripped = f"Resets in {time_str} (started {window_start})"
-        lines.append(f"\033[33m{self.VERTICAL}\033[0m  {reset_line}{' ' * (self.width - len(reset_stripped) - 4)}\033[33m{self.VERTICAL}\033[0m")
+        left_line = f"\033[32m{left_str} left\033[0m · Resets in \033[36m{time_str}\033[0m"
+        left_stripped = f"{left_str} left · Resets in {time_str}"
+        lines.append(f"\033[33m{self.VERTICAL}\033[0m  {left_line}{' ' * (self.width - len(left_stripped) - 4)}\033[33m{self.VERTICAL}\033[0m")
 
         lines.append(self._empty_line())
 
@@ -210,31 +224,38 @@ class SimpleDisplayComponent:
         lines.append(f"\033[33m{self.LEFT_T}─ Usage over time {self.HORIZONTAL * (self.width - 20)}{self.RIGHT_T}\033[0m")
         lines.append(self._empty_line())
 
-        header = "Period             Usage        TKN"
+        header = "Period             Usage              TKN"
         lines.append(f"\033[33m{self.VERTICAL}\033[0m  \033[90m{header}\033[0m{' ' * (self.width - len(header) - 4)}\033[33m{self.VERTICAL}\033[0m")
 
         if usage_over_time:
-            time_data = [
-                ("Recent session", usage_over_time.get("recent", 0)),
-                ("Today", usage_over_time.get("today", 0)),
-                ("This month", usage_over_time.get("month", 0)),
-            ]
+            window_5hr = usage_over_time.get("window_5hr", 0)
+            weekly = usage_over_time.get("weekly", 0)
         else:
-            time_data = [
-                ("Recent session", int(tokens_used * 0.15)),
-                ("Today", int(tokens_used * 0.4)),
-                ("This month", int(tokens_used * 0.7)),
-            ]
+            window_5hr = tokens_used
+            weekly = int(tokens_used * 2)
 
-        max_tokens = max(t[1] for t in time_data) if time_data else 1
+        # Current session - show percentage of limit (matches Claude /usage)
+        bar_session = self._render_bar(usage_pct, width=12)
+        tkn_str_session = self._format_tokens(window_5hr)
+        pct_session = f"{usage_pct:.0f}%"
+        time_str = self._format_time(minutes_to_reset)
+        row_session = f"{'Current session':<18} {bar_session} {pct_session:>4} {tkn_str_session:>6}"
+        lines.append(f"\033[33m{self.VERTICAL}\033[0m  {row_session}{' ' * (self.width - len(row_session) - 4)}\033[33m{self.VERTICAL}\033[0m")
 
-        for i, (label, tkn) in enumerate(time_data):
-            bar = self._render_bar((tkn / max_tokens) * 100 if max_tokens > 0 else 0, width=12)
-            tkn_str = self._format_tokens(tkn)
-            row = f"{label:<18} {bar} {tkn_str}"
-            lines.append(f"\033[33m{self.VERTICAL}\033[0m  {row}{' ' * (self.width - len(row) - 4)}\033[33m{self.VERTICAL}\033[0m")
-            if i < len(time_data) - 1:
-                lines.append(self._empty_line())
+        # Reset time for session
+        reset_info = f"Resets in {time_str}"
+        lines.append(f"\033[33m{self.VERTICAL}\033[0m  \033[90m{reset_info}\033[0m{' ' * (self.width - len(reset_info) - 4)}\033[33m{self.VERTICAL}\033[0m")
+
+        lines.append(self._empty_line())
+
+        # Current week - show tokens only (we don't have access to weekly limit)
+        tkn_str_weekly = self._format_tokens(weekly)
+        row_weekly = f"{'Current week':<18}              {tkn_str_weekly:>6}"
+        lines.append(f"\033[33m{self.VERTICAL}\033[0m  {row_weekly}{' ' * (self.width - len(row_weekly) - 4)}\033[33m{self.VERTICAL}\033[0m")
+
+        # Note about weekly
+        weekly_note = "(7-day rolling total)"
+        lines.append(f"\033[33m{self.VERTICAL}\033[0m  \033[90m{weekly_note}\033[0m{' ' * (self.width - len(weekly_note) - 4)}\033[33m{self.VERTICAL}\033[0m")
 
         lines.append(self._empty_line())
 
@@ -276,22 +297,50 @@ class SimpleDisplayComponent:
 
             lines.append(self._empty_line())
 
-        # === NEXT STEP ===
-        actions = self._get_actions(state_name, model_distribution)
-        if actions:
-            lines.append(f"\033[33m{self.LEFT_T}─ Next step {self.HORIZONTAL * (self.width - 14)}{self.RIGHT_T}\033[0m")
+        # === GUIDANCE ===
+        guidance = get_primary_guidance(
+            usage_percentage=usage_pct,
+            burn_rate=burn_rate,
+            model_distribution=model_distribution,
+            minutes_to_reset=minutes_to_reset,
+            current_model=current_model,
+        )
+
+        lines.append(f"\033[33m{self.LEFT_T}─ Guidance {self.HORIZONTAL * (self.width - 13)}{self.RIGHT_T}\033[0m")
+        lines.append(self._empty_line())
+
+        # Word-wrap the guidance text to fit within the box
+        content_width = self.width - 6  # Account for borders and padding
+        wrapped_lines = self._wrap_text(guidance.primary, content_width)
+
+        for wrapped_line in wrapped_lines:
+            padding = self.width - len(wrapped_line) - 4
+            lines.append(f"\033[33m{self.VERTICAL}\033[0m  {wrapped_line}{' ' * padding}\033[33m{self.VERTICAL}\033[0m")
+
+        # Add action prompt if available and not dismissed
+        action_state = get_action_state()
+        show_action = (
+            guidance.action_prompt
+            and guidance.interactive
+            and guidance.action_command
+            and not action_state.is_dismissed(guidance.action_command)
+        )
+
+        if show_action:
+            # Set this as the current action for keyboard handling
+            action_state.set_action(guidance.action_command)
+
             lines.append(self._empty_line())
+            # Format: → Switch to Sonnet?  [Y]es  [N]o thanks
+            action_line = f"\033[36m→\033[0m {guidance.action_prompt}  \033[32m[Y]\033[0mes  \033[90m[N]\033[0mo thanks"
+            action_stripped = f"→ {guidance.action_prompt}  [Y]es  [N]o thanks"
+            padding = self.width - len(action_stripped) - 4
+            lines.append(f"\033[33m{self.VERTICAL}\033[0m  {action_line}{' ' * padding}\033[33m{self.VERTICAL}\033[0m")
+        else:
+            # Clear current action if no action to show
+            action_state.clear_action()
 
-            for i, action in enumerate(actions, 1):
-                action_line = f"[{i}] {action}"
-                lines.append(f"\033[33m{self.VERTICAL}\033[0m  {action_line}{' ' * (self.width - len(action_line) - 4)}\033[33m{self.VERTICAL}\033[0m")
-
-            lines.append(self._empty_line())
-
-            prompt = "Enter a number and press Enter"
-            lines.append(f"\033[33m{self.VERTICAL}\033[0m  \033[90m{prompt}\033[0m{' ' * (self.width - len(prompt) - 4)}\033[33m{self.VERTICAL}\033[0m")
-
-            lines.append(self._empty_line())
+        lines.append(self._empty_line())
 
         # === FOOTER ===
         footer = "Ctrl+C to exit"
@@ -315,12 +364,14 @@ def demo():
         tokens_used=580000,
         token_limit=1000000,
         minutes_to_reset=225,
-        model_distribution={"opus": 100},
+        model_distribution={"opus": 75, "sonnet": 25},
         project_distribution={
             "-Users-hsiaotsui-mou-Desktop-Learn-Code---Token-Manager-CLI": 278000,
             "subagents": 302000,
         },
-        usage_over_time={"recent": 116000, "today": 311000, "month": 545000},
+        usage_over_time={"window_5hr": 580000, "weekly": 1250000},
+        burn_rate=85.0,
+        current_model="opus",
     )
 
 
