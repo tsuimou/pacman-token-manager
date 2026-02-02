@@ -1,6 +1,6 @@
 # Pacman Token Manager
 
-A human-first CLI tool for monitoring Claude AI token usage.
+Tool for monitoring more detail info on token usage in your terminal.
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
