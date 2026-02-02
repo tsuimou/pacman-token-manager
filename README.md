@@ -53,6 +53,23 @@ pip install pacman-token-manager
 | **GitHub (Latest)** | `pip install git+https://github.com/tsuimou/pacman-token-manager.git` | Latest code |
 | **Local Development** | `pip install -e .` | Editable install |
 
+### Claude Code Integration (MCP)
+
+To use inside Claude Code, add to `~/.claude/mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "pacman": {
+      "command": "python3",
+      "args": ["-m", "pacman.mcp.server"]
+    }
+  }
+}
+```
+
+Then restart Claude Code. Ask "check my tokens" or "chomp" and Claude will show your usage.
+
 ## Usage
 
 ```bash
