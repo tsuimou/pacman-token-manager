@@ -41,6 +41,13 @@ Tool for monitoring more detail info on token usage in your terminal.
 ## Installation
 
 ```bash
+# From PyPI (after publishing)
+pip install pacman-token-manager
+
+# Or install from GitHub
+pip install git+https://github.com/tsuimou/pacman-token-manager.git
+
+# Or local development
 pip install -e .
 ```
 

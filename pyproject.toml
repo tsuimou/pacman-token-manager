@@ -11,8 +11,8 @@ description = "A real-time terminal monitoring tool for Claude Code token usage 
 readme = "README.md"
 license = { text = "MIT" }
 requires-python = ">=3.9"
-authors = [{ name = "Maciek", email = "maciek@roboblog.eu" }]
-maintainers = [{ name = "Maciek", email = "maciek@roboblog.eu" }]
+authors = [{ name = "tsuimou" }]
+maintainers = [{ name = "tsuimou" }]
 keywords = [
   "ai", "analytics", "claude", "dashboard",
   "developer-tools", "monitoring", "rich",
@@ -74,13 +74,10 @@ test = [
 
 
 [project.urls]
-homepage = "https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor"
-repository = "https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor.git"
-documentation = "https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor#readme"
-issues = "https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor/issues"
-changelog = "https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor/blob/main/CHANGELOG.md"
-"Release Notes" = "https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor/releases"
-"Discussions" = "https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor/discussions"
+homepage = "https://github.com/tsuimou/pacman-token-manager"
+repository = "https://github.com/tsuimou/pacman-token-manager.git"
+documentation = "https://github.com/tsuimou/pacman-token-manager#readme"
+issues = "https://github.com/tsuimou/pacman-token-manager/issues"
 
 [project.scripts]
 pacman-token-manager = "pacman.__main__:main"
