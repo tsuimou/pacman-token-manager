@@ -6,30 +6,33 @@ Tool for monitoring more detail info on token usage in your terminal.
 ┌──────────────────────────────────────────────────────────────┐
 │  Pacman Token Manager                                        │
 ├──────────────────────────────────────────────────────────────┤
-│  Halfway there · Resets in 4h 25m (started 10:00 AM)         │
+│  Running low · Resets in 2h 14m (started 5:00 PM)            │
 ├──────────────────────────────────────────────────────────────┤
 │                                                              │
-│  TKN █████░░░░░░░░░░░░░░░  27%  193,920 / 728,474            │
-│  534k left · Resets in 4h 25m                                │
+│  TKN ████████████░░░░░░░░  58%  580,000 / 1,000,000          │
+│  420k left before you have to wait                           │
 │                                                              │
 ├─ Usage over time ────────────────────────────────────────────┤
 │                                                              │
 │  Period             Usage              TKN                   │
-│  Current session    ███░░░░░░░░░  27%   193k                 │
-│  Resets in 4h 25m                                            │
+│  Current session    ████████████  58%  580k                  │
+│  Resets in 2h 14m                                            │
 │                                                              │
-│  Current week                      4.6m                      │
+│  Current week                          1.2m                  │
 │  (7-day rolling total)                                       │
 │                                                              │
 ├─ Breakdown ──────────────────────────────────────────────────┤
 │                                                              │
-│  By Model           Usage        TKN                         │
-│  Opus               ████████████ 183k                        │
-│  Sonnet             ░░░░░░░░░░░░ 10k                         │
+│  By Model           Usage              TKN                   │
+│  Opus               ████████████       580k                  │
+│                                                              │
+│  By Project         Usage              TKN                   │
+│  subagents          ████████████       302k                  │
+│  my-project         ██████████░░       278k                  │
 │                                                              │
 ├─ Guidance ───────────────────────────────────────────────────┤
 │                                                              │
-│  Opus is handling 75% of your work. Sonnet is often          │
+│  Opus is handling 100% of your work. Sonnet is often         │
 │  sufficient and more economical.                             │
 │                                                              │
 │  → Switch to Sonnet?  [Y]es  [N]o thanks                     │
